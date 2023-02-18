@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 
 from .GraycartFeature import GraycartFeature, ProcessFeature
+from .GraycartMaterial import SiliconMaterial, PhotoresistMaterial
 from .utils import io, process, plotting
 
 """
@@ -18,7 +19,7 @@ self note:
 
 class GraycartProcess(object):
 
-    def __init__(self, step, process_type, recipe, time, details, basepath, subpath, features, data):
+    def __init__(self, step, process_type, recipe, time, details, basepath, subpath, features, data, materials={}):
         """
         Base class for all process types.
 
@@ -69,6 +70,10 @@ class GraycartProcess(object):
         self._mread = data['Misc']['filetype_read']
         self._mwrite = data['Misc']['filetype_write']
 
+        self.materials = materials
+        self.initialize_materials()
+        self.process_materials()
+
     def __repr__(self):
         class_ = 'GraycartProcess'
         repr_dict = {'Step': self.step,
@@ -85,15 +90,32 @@ class GraycartProcess(object):
     # ------------------------------------------------------------------------------------------------------------------
     # DATA INPUT FUNCTIONS
 
+    def initialize_materials(self):
+        if len(self.materials) < 1:
+            substrate = 'Silicon'
+            self.materials = {substrate: SiliconMaterial(name=substrate, properties=None)}
+
+        if self.process_type == 'Coat':
+            self.materials.update({'Photoresist': PhotoresistMaterial(name='Photoresist', properties=None)})
+
+    def process_materials(self):
+        processed_materials = {}
+        for mat, gcm in self.materials.items():
+            gcm.apply_process(process=self.process_type, recipe=self.recipe, time=self.time)
+            processed_materials.update({mat: gcm})
+        self.materials = processed_materials
+
     def add_profilometry_to_features(self,
                                      plot_fits=False,
                                      perform_rolling_on=False,
+                                     evaluate_signal_processing=False,
                                      downsample=5,
                                      width_rel_radius=0.01,
                                      peak_rel_height=0.95,
                                      fit_func='parabola',
                                      prominence=1,
-                                     plot_width_rel_target=1.05,
+                                     plot_width_rel_target=1.1,
+                                     thickness_pr=0,
                                      ):
         """
         Routine:
@@ -125,22 +147,30 @@ class GraycartProcess(object):
 
             # read scan
             df = io.read_scan(filepath=join(self._ppath, f), tool=self._ptool)
+            raw_profile = df.copy()
 
             # convert 'read_units' to 'write_units'
             df['x'] = df['x'] * self._pread_x_units / self._pwrite_x_units  # x-units: microns
             df['z'] = df['z'] * self._pread_y_units / self._pwrite_y_units  # z-units: microns
+            input_sampling_rate = np.round(df['x'].diff().mean(), 2)
 
-            # rolling average to reduce random peaks disturbance on peak_finder
+            # evaluate effects of signal processing
+            if evaluate_signal_processing:
+                self.conditional_evaluate_signal_processing(filename=fn, df=df, perform_rolling_on=True)
+
+            # rolling average to reduce random peaks disturbance on peak_finder (conditional on 'step' and 'fid')
             df = self.conditional_rolling_average(filename=fn,
                                                   df=df,
                                                   perform_rolling_on=perform_rolling_on,
                                                   rolling_window=10,
                                                   min_periods=1,
+                                                  rolling_function='median',
                                                   )
 
             # input sampling rate
-            input_sampling_rate = np.round(df['x'].diff().mean(), 2)
-            input_samples_per_radius = gcff.target_radius / input_sampling_rate
+            rolling_sampling_rate = np.round(df['x'].diff().mean(), 2)
+            input_samples_per_radius = gcff.dr / rolling_sampling_rate
+            input_samples_outside_radius = 0.5 * len(df) - input_samples_per_radius
 
             # correct for profile tilt
             tilt_corr_samples = int(input_samples_per_radius * (plot_width_rel_target - 1))
@@ -174,7 +204,7 @@ class GraycartProcess(object):
             # down-sample to reduce computation and file size
             if downsample != 0:
                 df = process.downsample_dataframe(df,
-                                                  xcol ='x',
+                                                  xcol='x',
                                                   ycol='z',
                                                   num_points=None,
                                                   sampling_rate=downsample,
@@ -203,26 +233,20 @@ class GraycartProcess(object):
             # instantiate ProcessFeature to inherit GraycartFeature
             for pk_lbl, pk_details in peak_details.items():
                 pk_details['peak_properties'].update({'input_sampling_rate': input_sampling_rate,
-                                                      'sampling_rate': output_sampling_rate})
+                                                      'sampling_rate': output_sampling_rate,
+                                                      'raw_profile': raw_profile})
 
-                """pf = {pk_lbl: ProcessFeature(fid=self.features[pk_lbl].fid,
-                                             label=pk_lbl,
-                                             did=self.features[pk_lbl].did,
-                                             graycart_feature=self.features[pk_lbl],
-                                             step=self.step,
-                                             process_type=self.process_type,
-                                             subpath=self.subpath,
-                                             dfpk=pk_details['df'],
-                                             peak_properties=pk_details['peak_properties'],
-                                             ),
-                      
-                      }"""
+                # add z-offset for photoresist thickness
+                df = pk_details['df']
+                df['z_surf'] = df['z'] + np.max([thickness_pr, 0])
+                print("Step {}, {} for {} s: PR thickness = {}".format(self.step, self.recipe, self.time, thickness_pr))
+                # df['z_surf'] = df['z_surf'].where(df['z_surf'] > 0, 0)
 
                 pf = {pk_lbl: ProcessFeature(graycart_wafer_feature=self.features[pk_lbl],
                                              step=self.step,
                                              process_type=self.process_type,
                                              subpath=self.subpath,
-                                             dfpk=pk_details['df'],
+                                             dfpk=df,
                                              peak_properties=pk_details['peak_properties'],
                                              ),
 
@@ -235,7 +259,8 @@ class GraycartProcess(object):
     # ------------------------------------------------------------------------------------------------------------------
     # DATA PROCESSING FUNCTIONS
 
-    def conditional_rolling_average(self, filename, df, perform_rolling_on, rolling_window=10, min_periods=1):
+    def conditional_rolling_average(self, filename, df, perform_rolling_on, rolling_window=10, min_periods=1,
+                                    rolling_function='average'):
         """
         Rolling average to reduce random peaks disturbance on peak_finder
 
@@ -249,19 +274,105 @@ class GraycartProcess(object):
 
         if isinstance(perform_rolling_on, list):
             for step_filename in perform_rolling_on:
-                if self.step == step_filename[0] and filename == step_filename[1]:
-                    df = df.rolling(rolling_window, min_periods).mean()
-                    print("Step {}, file {}: rolling average(window={}, min_period={})".format(step_filename[0],
-                                                                                               step_filename[1],
-                                                                                               rolling_window,
-                                                                                               min_periods))
-        elif perform_rolling_on is True:
-            df = df.rolling(rolling_window, min_periods).mean()
 
+                if len(step_filename) == 3:
+                    rolling_window = step_filename[2]
+
+                if self.step == step_filename[0] and filename == step_filename[1]:
+
+                    if rolling_function == 'median':
+                        df = df.rolling(rolling_window, min_periods).median()
+                    else:
+                        df = df.rolling(rolling_window, min_periods).mean()
+
+                    print("Step {}, file {}: rolling {}(window={}, min_period={})".format(step_filename[0],
+                                                                                          step_filename[1],
+                                                                                          rolling_function,
+                                                                                          rolling_window,
+                                                                                          min_periods))
+
+        elif perform_rolling_on is True:
+            if rolling_function == 'median':
+                df = df.rolling(rolling_window, min_periods).median()
+            else:
+                df = df.rolling(rolling_window, min_periods).mean()
         else:
             pass
 
         return df
+
+    def conditional_evaluate_signal_processing(self, filename, df, perform_rolling_on):
+        """
+        Rolling average to reduce random peaks disturbance on peak_finder
+
+        :param filename:
+        :param df:
+        :param perform_rolling_on:
+        :param rolling_window:
+        :param min_periods:
+        :return:
+        """
+        import matplotlib.pyplot as plt
+        min_periods = 1
+        lw = 0.5
+
+        if isinstance(perform_rolling_on, list):
+            for step_filename in perform_rolling_on:
+                if self.step == step_filename[0] and filename == step_filename[1]:
+                    fig, (ax0, ax1, ax2, ax3) = plt.subplots(nrows=4, figsize=(5.5, 4.5))
+
+                    ax0.plot(df.x, df.z, '.', ms=0.5, color='k', alpha=0.5, label='Raw')
+                    ax0.legend()
+
+                    for window_size in [5, 10, 25]:
+                        dff = df.rolling(window_size, min_periods).mean()
+                        ax1.plot(dff.x, dff.z, linewidth=lw, label=window_size)
+
+                        dff = df.rolling(window_size, min_periods).median()
+                        ax2.plot(dff.x, dff.z, linewidth=lw, label=window_size)
+
+                        dff = process.interpolate_dataframe(df,
+                                                            xcol='x',
+                                                            ycol='z',
+                                                            num_points=None,
+                                                            sampling_rate=window_size)
+                        ax3.plot(dff.x, dff.z, linewidth=lw, label=window_size)
+
+                    ax1.legend(title='Mean R.A.')
+                    ax2.legend(title='Median R.A.')
+                    ax3.legend(title='Interpolate')
+
+                plt.suptitle('Step {}: {}'.format(self.step, filename))
+                plt.tight_layout()
+                plt.show()
+
+        elif perform_rolling_on is True:
+            fig, (ax0, ax1, ax2, ax3) = plt.subplots(nrows=4, figsize=(5.5, 4.5))
+
+            ax0.plot(df.x, df.z, '.', ms=0.5, color='k', alpha=0.5, label='Raw')
+            ax0.legend()
+
+            for window_size in [5, 10, 25]:
+                dff = df.rolling(window_size, min_periods).mean()
+                ax1.plot(dff.x, dff.z, linewidth=lw, label=window_size)
+
+                dff = df.rolling(window_size, min_periods).median()
+                ax2.plot(dff.x, dff.z, linewidth=lw, label=window_size)
+
+                dff = process.interpolate_dataframe(df,
+                                                    xcol='x',
+                                                    ycol='z',
+                                                    num_points=None,
+                                                    sampling_rate=window_size)
+                ax3.plot(dff.x, dff.z, linewidth=lw, label=window_size)
+
+            ax1.legend(title='Mean R.A.')
+            ax2.legend(title='Median R.A.')
+            ax3.legend(title='Interpolate')
+
+        plt.suptitle('Step {}: {}'.format(self.step, filename))
+        plt.tight_layout()
+        plt.show()
 
     # ------------------------------------------------------------------------------------------------------------------
     # PLOTTING FUNCTIONS
@@ -332,3 +443,59 @@ class GraycartProcess(object):
     @property
     def pwrite(self):
         return self._pwrite
+
+"""
+class CoatProcess(GraycartProcess):
+    def __init__(self, graycart_process):
+
+        GraycartProcess.__init__(self,
+                                 graycart_process.step,
+                                 graycart_process.process_type,
+                                 graycart_process.recipe,
+                                 graycart_process.time,
+                                 graycart_process.details,
+                                 graycart_process.basepath,
+                                 graycart_process.subpath,
+                                 graycart_process.features,
+                                 graycart_process.data,
+                                 materials=graycart_process.materials,
+                                 )
+
+    def process_material(self):
+        if 'Photoresist' in self.materials.keys():
+            self.materials['Photoresist'].apply_process(process=self.process_type,
+                                                        recipe=self.recipe,
+                                                        time=self.time,
+                                                        )
+        else:
+            gcm = PhotoresistMaterial(name=self.details['Photoresist'],
+                                      properties=None,
+                                      spin_rpm=self.details['RPM'],
+                                      spin_time=self.time,
+                                      )
+            self.materials.update({'Photoresist': gcm})
+
+
+class EtchProcess(GraycartProcess):
+    def __init__(self, graycart_process):
+
+        GraycartProcess.__init__(self,
+                                 graycart_process.step,
+                                 graycart_process.process_type,
+                                 graycart_process.recipe,
+                                 graycart_process.time,
+                                 graycart_process.details,
+                                 graycart_process.basepath,
+                                 graycart_process.subpath,
+                                 graycart_process.features,
+                                 graycart_process.data,
+                                 materials=graycart_process.materials,
+                                 )
+
+    def process_material(self):
+        materials = {}
+        for mat, gcm in self.materials.items():
+            gcm.apply_process(process=self.process_type, recipe=self.recipe, time=self.time)
+
+"""
+#

@@ -124,6 +124,12 @@ def collect_KLATencor(graycart_process):
         if f in graycart_process.feature_labels:
             process_files.append([[graycart_process.features[f].fid], [f], f + graycart_process.pread])
 
+        """rot_str = 'rot90'
+        if f.startswith(rot_str):
+            fid_lbl = f[len(rot_str) + 1:]
+            if fid_lbl in graycart_process.feature_labels:
+                process_files.append([[graycart_process.features[fid_lbl].fid], [fid_lbl], f + graycart_process.pread])"""
+
     return process_files
 
 

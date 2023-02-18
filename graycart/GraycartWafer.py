@@ -1,17 +1,20 @@
 from os.path import join, isdir
 from os import makedirs
 from collections import OrderedDict
+from copy import deepcopy
 
 import pandas as pd
 
 from .GraycartProcess import GraycartProcess
 from .GraycartFeature import ProcessFeature, initialize_designs, initialize_design_features
+from graycart import utils
 from .utils import plotting, io
 
 
 class GraycartWafer(object):
 
-    def __init__(self, wid, path, features, process_flow, processes, measurement_methods, path_results='results'):
+    def __init__(self, wid, path, designs, features, process_flow, processes, measurement_methods,
+                 path_results='results'):
         """
 
         :param folder:
@@ -26,6 +29,9 @@ class GraycartWafer(object):
         # file paths
         self.path_results = join(self.path, path_results)
         self.make_dirs()
+
+        # add designs
+        self.designs = designs
 
         # add features
         self.features = features
@@ -45,6 +51,8 @@ class GraycartWafer(object):
     # DATA INPUT FUNCTIONS
 
     def add_process(self):
+
+        wfr_materials = {}
 
         # iterate through process flow
         processes = OrderedDict()
@@ -85,20 +93,65 @@ class GraycartWafer(object):
                                       subpath=prcs['path'],
                                       features=self.features.copy(),
                                       data=data_paths,
+                                      materials=wfr_materials,
                                       )
+
+            wfr_materials = deepcopy(process.materials)
             processes.update({process.step: process})
 
         self.processes = processes
 
+    def get_feature(self, fid, step):
+        gcp = self.processes[step]
+        gcf_ = None
+        for flbl, gcf in gcp.features.items():
+            if gcf.fid == fid:
+                gcf_ = gcf
+        return gcf_
+
     # ------------------------------------------------------------------------------------------------------------------
     # DATA PROCESSING FUNCTIONS
+
+    def backout_process_to_achieve_target(self,
+                                          target_radius, target_depth,
+                                          thickness_PR=7.5, thickness_PR_budget=1.5,
+                                          save_fig=False, path_save=None, save_type='.png'):
+
+        if path_save is None and save_fig is True:
+            path_save = self.path_results
+
+        dids = self.dids
+
+        for did in dids:
+            dft = self.designs[did].mdft.copy()
+
+            # resize
+            dft['r'] = dft['r'] * target_radius / 2
+            dft['z'] = dft['z'] * target_depth
+
+            est_process_flow = utils.process.backout_process_from_target(df=dft,
+                                                                         px='r',
+                                                                         py='z',
+                                                                         pys='z_surf',
+                                                                         thickness_PR=7.5,
+                                                                         thickness_PR_budget=1.5,
+                                                                         r_target=5,
+                                                                         did=did,
+                                                                         )
+
+            plotting.plot_target_profile_and_process_flow_backout(dft,
+                                                                  est_process_flow,
+                                                                  path_save=path_save,
+                                                                  save_type=save_type,
+                                                                  )
 
     def evaluate_process_profilometry(self,
                                       plot_fits=True,
                                       perform_rolling_on=False,
-                                      downsample=3.75,
+                                      evaluate_signal_processing=False,
+                                      downsample=5,
                                       width_rel_radius=0.01,
-                                      peak_rel_height=None,
+                                      peak_rel_height=0.975,
                                       fit_func='parabola',
                                       prominence=1,
                                       plot_width_rel_target=1.1,
@@ -109,33 +162,27 @@ class GraycartWafer(object):
                 * plots tilt correction
             * plot peak_finding algorithm
             * plot all profiles on the same figure for comparison
-
-        :param plot_fits:
-        :param perform_rolling_on:
-        :param downsample:
-        :param width_rel_radius:
-        :param peak_rel_height:
-        :param fit_func:
-        :param prominence:
-        :param plot_width_rel_target:
-        :return:
         """
-
-        if peak_rel_height is not None:
-            raise ValueError("peak_rel_height is hard-coded.")
 
         for step, gcprocess in self.processes.items():
             if gcprocess.ppath is not None:
-                peak_rel_height = min([0.93 + step / 100, 0.97])
+                if isinstance(peak_rel_height, float):
+                    pass
+                elif callable(peak_rel_height):
+                    peak_rel_height = peak_rel_height(step)  # min([0.93 + step / 100, 0.97])
+                else:
+                    raise ValueError()
 
                 gcprocess.add_profilometry_to_features(plot_fits=plot_fits,
                                                        perform_rolling_on=perform_rolling_on,
+                                                       evaluate_signal_processing=evaluate_signal_processing,
                                                        downsample=downsample,
                                                        width_rel_radius=width_rel_radius,
                                                        peak_rel_height=peak_rel_height,
                                                        fit_func=fit_func,
                                                        prominence=prominence,
                                                        plot_width_rel_target=plot_width_rel_target,
+                                                       thickness_pr=gcprocess.materials['Photoresist'].thickness
                                                        )
 
                 if plot_fits:
@@ -165,27 +212,165 @@ class GraycartWafer(object):
                          index=False,
                          )
 
+    def merge_exposure_doses_to_process_depths(self, export=False):
+        dfs = []
+        for step, gcp in self.processes.items():
+            for f_lbl, gcf in gcp.features.items():
+                if isinstance(gcf, ProcessFeature):
+                    if gcf.exposure_func is not None:
+                        df = gcf.exposure_func['dfmap']
+                        df['did'] = gcf.did
+                        df['fid'] = gcf.fid
+                        df['step'] = step
+                        df['dose'] = gcf.dose
+                        df['focus'] = gcf.focus
+                        dfs.append(df)
+
+        dfs = pd.concat(dfs)
+        self.df_all = dfs
+
+        if export:
+            dfs.to_excel(join(self.path, 'results',
+                              'w{}_merged_dose-depths'.format(self._wid) +
+                              self.measurement_methods['Profilometry']['filetype_write']),
+                         index=False,
+                         )
+
+    def characterize_exposure_dose_depth_relationship(self, z_standoff=-0.125, process_type=None, steps=None,
+                                                      plot_figs=False, save_type='.png'):
+
+        if process_type is None:
+            process_type = ['Expose', 'Develop', 'Thermal Reflow']
+
+        if not isinstance(process_type, list):
+            process_type = [process_type]
+
+        if steps is None:
+            steps = self.list_steps
+
+        for step, gcp in self.processes.items():
+            if gcp.process_type in process_type and step in steps:
+                for flbl, gcf in gcp.features.items():
+                    if isinstance(gcf, ProcessFeature):
+
+                        gcf.calculate_exposure_dose_depth_relationship(z_standoff=z_standoff)
+
+                        if plot_figs:
+                            plotting.plot_exposure_dose_depth_relationship(gcf,
+                                                                           path_save=join(self.path_results, 'figs'),
+                                                                           save_type=save_type,
+                                                                           )
+
+                            plotting.plot_exposure_functions(gcf,
+                                                             path_save=join(self.path_results, 'figs'),
+                                                             save_type=save_type,
+                                                             )
+
+    def correct_grayscale_design_profile(self, z_standoff, process_type=None, steps=None, plot_figs=False,
+                                         save_type='.png'):
+
+        if process_type is None:
+            process_type = ['Develop', 'Thermal Reflow']
+
+        if not isinstance(process_type, list):
+            process_type = [process_type]
+
+        if steps is None:
+            steps = self.list_steps
+
+        for step, gcp in self.processes.items():
+            if gcp.process_type in process_type and step in steps:
+                for flbl, gcf in gcp.features.items():
+                    if isinstance(gcf, ProcessFeature):
+                        gcf.calculate_correct_exposure_profile(z_standoff=z_standoff)
+
+                        if plot_figs:
+                            plotting.plot_exposure_profile_and_design_layers(gcf,
+                                                                             path_save=join(self.path_results, 'figs'),
+                                                                             save_type=save_type,
+                                                                             )
+
+    def grade_profile_accuracy(self, step, target_radius, target_depth):
+
+        res = []
+        for gcf in self.processes[step].features.values():
+            if isinstance(gcf, ProcessFeature):
+                gcf.calculate_profile_to_target_error(target_radius, target_depth)
+                res.append([gcf.fid, gcf.target_rmse, gcf.target_rmse_percent_depth, gcf.target_r_squared])
+                gcf.correlate_profile_to_target()
+
+        import numpy as np
+        res = pd.DataFrame(np.array(res), columns=['fid', 'rmse', 'rmse_percent_depth', 'r_sq'])
+        print(res)
+
     # ------------------------------------------------------------------------------------------------------------------
-    # PLOTTING FUNCTIONS
+    # PLOTTING FUNCTIONS (HIGH-LEVEL)
+
+    def plot_all_exposure_dose_to_depth(self, step, save_type='.png'):
+        plotting.plot_all_exposure_dose_to_depth(df=self.df_all[self.df_all['step'] == step],
+                                                 path_save=join(self.path_results, 'figs',
+                                                                'merged_dose-depths_step{}'.format(step) + save_type))
 
     def plot_feature_evolution(self, px='r', py='z', save_fig=True):
         dids = self.dids
-        dids.append(None)
+        if len(dids) > 1:
+            dids.append(None)
 
         for did in dids:
-            for norm in [False, True]:
-                self.compare_target_to_features_by_process(px=px, py=py, did=did, normalize=norm, save_fig=save_fig,
-                                                           save_type='.png')
+            self.plot_features_diff_by_process_and_material(px=px, py='z_surf', did=did, normalize=False,
+                                                            save_fig=save_fig,
+                                                            save_type='.png')
 
+            self.plot_features_diff_by_process(px=px, py=py, did=did, normalize=False, save_fig=save_fig,
+                                               save_type='.png')
+
+            for norm in [False, True]:
                 self.plot_features_by_process(px=px, py=py, did=did, normalize=norm, save_fig=save_fig,
                                               save_type='.png')
 
                 self.plot_processes_by_feature(px=px, py=py, did=did, normalize=norm, save_fig=save_fig,
                                                save_type='.png')
 
+    def compare_target_to_feature_evolution(self, px='r', py='z', save_fig=True):
+        dids = self.dids
+        if len(dids) > 1:
+            dids.append(None)
+
+        self.estimated_target_profiles(px, py='z_surf', include_target=True, save_fig=save_fig, save_type='.png')
+
+        for did in dids:
+            pass
+
+            """self.compare_target_to_features_by_process(px=px, py='z_surf', did=did, normalize=False, save_fig=save_fig,
+                                                       save_type='.png')
+            for norm in [False, True]:
+                self.compare_target_to_features_by_process(px=px, py=py, did=did, normalize=norm, save_fig=save_fig,
+                                                           save_type='.png')"""
+
+    def compare_exposure_functions(self, process_types=None):
+        if process_types is None:
+            process_types = ['Develop', 'Thermal Reflow']
+
+        for step, gcp in self.processes.items():
+            if gcp.process_type in process_types:
+                plotting.compare_exposure_function_plots(gcp, path_save=self.path_results, save_type='.png')
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # PLOTTING FUNCTIONS (LOW-LEVEL)
+
     def plot_features_by_process(self, px, py, did=None, normalize=False, save_fig=False, save_type='.png'):
         plotting.plot_features_by_process(self, px, py, did=did, normalize=normalize, save_fig=save_fig,
                                           save_type=save_type)
+
+    def plot_features_diff_by_process(self, px, py, did=None, normalize=False, save_fig=False, save_type='.png'):
+        plotting.plot_features_diff_by_process(self, px, py, did=did, normalize=normalize, save_fig=save_fig,
+                                               save_type=save_type)
+
+    def plot_features_diff_by_process_and_material(self, px, py='z_surf', did=None, normalize=False, save_fig=False,
+                                                   save_type='.png'):
+        plotting.plot_features_diff_by_process_and_material(self, px, py, did=did, normalize=normalize,
+                                                            save_fig=save_fig,
+                                                            save_type=save_type)
 
     def plot_processes_by_feature(self, px, py, did=None, normalize=False, save_fig=False, save_type='.png'):
         plotting.plot_processes_by_feature(self, px, py, did=did, normalize=normalize, save_fig=save_fig,
@@ -195,6 +380,9 @@ class GraycartWafer(object):
                                               save_type='.png'):
         plotting.compare_target_to_features_by_process(self, px, py, did=did, normalize=normalize, save_fig=save_fig,
                                                        save_type=save_type)
+
+    def estimated_target_profiles(self, px, py='z_surf', include_target=True, save_fig=False, save_type='.png'):
+        plotting.estimated_target_profiles(self, px, py, include_target, save_fig, save_type)
 
     # ------------------------------------------------------------------------------------------------------------------
     # UTILITY FUNCTIONS
@@ -212,19 +400,37 @@ class GraycartWafer(object):
 
     @property
     def dids(self):
-        if self.dfps is not None:
-            dids = list(self.dfps.did.unique())
-        else:
-            dids = None
+        dids = [gcf.did for gcf in self.designs.values()]
+        dids = list(set(dids))
         return dids
 
     @property
     def fids(self):
-        if self.dfps is not None:
-            fids = self.dfps.fid.unique()
-        else:
-            fids = None
+        fids = [gcf.fid for gcf in self.designs.values()]
+        fids = list(set(fids))
         return fids
+
+    @property
+    def list_steps(self):
+        if self.processes is not None:
+            list_steps = [stp for stp in self.processes.keys()]
+            list_steps = list(set(list_steps))
+        else:
+            list_steps = None
+
+        return list_steps
+
+    @property
+    def list_processes(self):
+        if self.processes is not None:
+            list_processes = []
+            for gcp in self.processes.items():
+                list_processes.append(gcp['process_type'])
+            list_processes = list(set(list_processes))
+        else:
+            list_processes = None
+
+        return list_processes
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -234,50 +440,17 @@ class GraycartWafer(object):
 
 
 def evaluate_wafer_flow(wid, base_path, fn_pflow, path_results, profilometry_tool,
-                        design_ids, design_lbls, design_locs,
-                        design_spacing, dose_lbls, focus_lbls, dose, dose_step, focus, focus_step, fem_dxdy,
-                        save_all_results,
+                        design_lbls, target_lbls, design_locs, design_ids,
+                        design_spacing, dose_lbls, focus_lbls, fem_dxdy,
+                        target_radius=None,
+                        plot_width_rel_target_radius=1.15,
+                        peak_rel_height=0.975,
+                        save_all_results=False,
                         perform_rolling_on=False,
+                        evaluate_signal_processing=False,
                         ):
-    """
-
-    :param wid:
-    :param base_path:
-    :param fn_pflow:
-    :param path_results:
-    :param profilometry_tool:
-    :param design_ids:
-    :param design_lbls:
-    :param design_locs:
-    :param design_spacing:
-    :param dose_lbls:
-    :param focus_lbls:
-    :param dose:
-    :param dose_step:
-    :param focus:
-    :param focus_step:
-    :param fem_dxdy:
-    :param save_all_results:
-    :param perform_rolling_on:
-    :return:
-    """
     # ------------------------------------------------------------------------------------------------------------------
     # SET UP THE DATA HIERARCHY
-
-    # 1. initialize 'designs'
-    designs = initialize_designs(wid, base_path, design_ids, design_lbls, design_locs)
-
-    # 2. 'designs' on a wafer form 'features'
-    features = initialize_design_features(designs,
-                                          design_spacing,
-                                          dose_lbls,
-                                          focus_lbls,
-                                          dose,
-                                          dose_step,
-                                          focus,
-                                          focus_step,
-                                          fem_dxdy,
-                                          )
 
     # 3. 'features' undergo 'processes'
     process_flow = io.read_process_flow(fp=join(base_path, fn_pflow))
@@ -285,10 +458,24 @@ def evaluate_wafer_flow(wid, base_path, fn_pflow, path_results, profilometry_too
     # 4. 'measurements' record the effect of 'processes' on 'features'
     measurement_methods = io.read_measurement_methods(profilometry=profilometry_tool)
 
+    # 1. initialize 'designs'
+    designs = initialize_designs(base_path, design_lbls, target_lbls, design_locs, design_ids)
+
+    # 2. 'designs' on a wafer form 'features'
+    features = initialize_design_features(designs,
+                                          design_spacing,
+                                          dose_lbls,
+                                          focus_lbls,
+                                          process_flow,
+                                          fem_dxdy,
+                                          target_radius=target_radius,
+                                          )
+
     # 5. the 'wafer' structures all of this data as a historical record of 'cause' and 'effect'
     wfr = GraycartWafer(wid=wid,
                         path=base_path,
                         path_results=path_results,
+                        designs=designs,
                         features=features,
                         process_flow=process_flow,
                         processes=None,
@@ -298,10 +485,16 @@ def evaluate_wafer_flow(wid, base_path, fn_pflow, path_results, profilometry_too
     # ------------------------------------------------------------------------------------------------------------------
     # ANALYZE THE PROCESS DATA
 
-    wfr.evaluate_process_profilometry(plot_fits=save_all_results, perform_rolling_on=perform_rolling_on)
+    wfr.evaluate_process_profilometry(plot_fits=save_all_results,
+                                      perform_rolling_on=perform_rolling_on,
+                                      evaluate_signal_processing=evaluate_signal_processing,
+                                      plot_width_rel_target=plot_width_rel_target_radius,
+                                      peak_rel_height=peak_rel_height,
+                                      downsample=5,
+                                      width_rel_radius=0.01,
+                                      fit_func='parabola',
+                                      prominence=1,
+                                      )
     wfr.merge_processes_profilometry(export=save_all_results)
-
-    if save_all_results:
-        wfr.plot_feature_evolution(px='r', py='z', save_fig=save_all_results)
 
     return wfr

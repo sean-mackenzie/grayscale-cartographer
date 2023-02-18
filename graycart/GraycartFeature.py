@@ -1,4 +1,3 @@
-
 from os.path import join, isdir, exists
 from os import listdir
 
@@ -8,10 +7,12 @@ import pandas as pd
 import numpy as np
 from scipy.special import erf
 
+from graycart.utils import process, fit
+
 
 class GraycartFeature(object):
 
-    def __init__(self, did, dlbl, path_design, dxc=0, dyc=0, path_target=None):
+    def __init__(self, did, dlbl, path_design, dxc=0, dyc=0, path_target=None, bits=8):
         super(GraycartFeature, self).__init__()
 
         self.did = did
@@ -21,6 +22,8 @@ class GraycartFeature(object):
         self.dxc = dxc
         self.dyc = dyc
 
+        self.bits = bits
+
         self._dfd = None
         self.dr = None
         self.read_design_file()
@@ -28,7 +31,6 @@ class GraycartFeature(object):
         self.path_target = path_target
         self.dft = None
         self.read_target_file()
-
 
     def __repr__(self):
         class_ = 'GraycartFeature'
@@ -59,7 +61,7 @@ class GraycartFeature(object):
         else:
             print("No target profile found at {}. Using standard erf(r) function instead.".format(self.path_target))
 
-            x = np.linspace(-2, 2, 256)
+            x = np.linspace(-2, 2, self.bit_resolution)
             px = (x + 2) / 2
             py = erf(x) / 2 - 0.5
             dft = pd.DataFrame(np.vstack([px, py]).T, columns=['r', 'z'])
@@ -68,6 +70,10 @@ class GraycartFeature(object):
     def resize_target_profile(self, radius=1, amplitude=1):
         self.dft['r'] = self.dft['r'] * radius / 2
         self.dft['z'] = self.dft['z'] * amplitude
+
+    @property
+    def bit_resolution(self):
+        return 2 ** self.bits
 
     @property
     def dfd(self):
@@ -97,6 +103,9 @@ class WaferFeature(GraycartFeature):
         self.dose = dose
         self.focus = focus
 
+        self.dfe = None
+        self.compute_exposure_profile()
+
         self.xc = self.fxc + self.dxc
         self.yc = self.fyc + self.dyc
 
@@ -125,16 +134,28 @@ class WaferFeature(GraycartFeature):
             out_str += '{}: {} \n'.format(key, str(val))
         return out_str
 
+    def compute_exposure_profile(self):
+        dfe = self.dfd.copy()
+        dfe['percent_dose'] = dfe['l'] / self.bit_resolution
+        dfe['exposure_dose'] = dfe['percent_dose'] * self.dose
+        self.dfe = dfe
+
 
 class ProcessFeature(WaferFeature):
 
     def __init__(self, graycart_wafer_feature, step, process_type, subpath, dfpk, peak_properties):
-
-        # super().__init__(did, dlbl, path_design, fid, label, fxc, fyc, dose, focus)
-        # graycart_feature, fid, label, fxc, fyc, dose, focus
         super().__init__(graycart_wafer_feature,
-                         graycart_wafer_feature.fid, graycart_wafer_feature.label, graycart_wafer_feature.fxc,
-                         graycart_wafer_feature.fyc, graycart_wafer_feature.dose, graycart_wafer_feature.focus)
+                         fid=graycart_wafer_feature.fid,
+                         label=graycart_wafer_feature.label,
+                         fxc=graycart_wafer_feature.fxc,
+                         fyc=graycart_wafer_feature.fyc,
+                         dose=graycart_wafer_feature.dose,
+                         focus=graycart_wafer_feature.focus,
+                         feature_extents=graycart_wafer_feature.feature_extents,
+                         feature_spacing=graycart_wafer_feature.feature_spacing,
+                         target_radius=graycart_wafer_feature.target_radius,
+                         target_depth=graycart_wafer_feature.target_depth,
+                         target_profile=graycart_wafer_feature.target_profile)
 
         self.step = step
         self.process_type = process_type
@@ -142,6 +163,12 @@ class ProcessFeature(WaferFeature):
 
         self.dfpk = dfpk
         self.peak_properties = peak_properties
+
+        # derived values
+        self.exposure_func = None
+        self.target_rmse = None
+        self.target_rmse_percent_depth = None
+        self.target_r_squared = None
 
     def __repr__(self):
         class_ = 'ProcessFeature'
@@ -156,23 +183,216 @@ class ProcessFeature(WaferFeature):
             out_str += '{}: {} \n'.format(key, str(val))
         return out_str
 
+    def calculate_profile_to_target_error(self, target_radius, target_depth):
+        self.resize_target_profile(radius=target_radius, amplitude=target_depth)
+        dft = self.mdft.copy()  # mirrored target profile
+        dfpk = self.dfpk.copy()
 
-def initialize_designs(wid, base_path, design_ids, design_lbls, design_locs):
+        target_radius_limits = [dft.r.min(), dft.r.max()]
+        target_samples = len(dft)
+        target_sampling_rate = target_samples / (target_radius_limits[1] - target_radius_limits[0])
+
+        dfpk = dfpk[(dfpk['r'] > target_radius_limits[0]) & (dfpk['r'] < target_radius_limits[1])]
+        profile_radius_limits = [dfpk.r.min(), dfpk.r.max()]
+        profile_samples = len(dfpk)
+        profile_sampling_rate = profile_samples / (profile_radius_limits[1] - profile_radius_limits[0])
+
+        max_sampling_rate = np.max([target_sampling_rate, profile_sampling_rate])
+
+        tx, ty = process.resample_array(x=dft.r.to_numpy(), y=dft.z.to_numpy(), num_points=profile_samples,
+                                        sampling_rate=None)
+        px, py = process.resample_array(x=dfpk.r.to_numpy(), y=dfpk.z.to_numpy(), num_points=profile_samples,
+                                        sampling_rate=None)
+
+        rmse, r_squared = fit.calculate_fit_error(fit_results=py, data_fit_to=ty)
+
+        self.target_rmse = rmse
+        self.target_rmse_percent_depth = rmse / target_depth * 100
+        self.target_r_squared = r_squared
+
+    def correlate_profile_to_target(self, target_radius=None, target_depth=None):
+        if target_depth is not None:
+            self.resize_target_profile(radius=target_radius, amplitude=target_depth)
+
+        dft = self.mdft.copy()  # mirrored target profile
+        dfpk = self.dfpk.copy()
+
+        target_radius_limits = [dft.r.min(), dft.r.max()]
+        target_samples = len(dft)
+        target_sampling_rate = target_samples / (target_radius_limits[1] - target_radius_limits[0])
+
+        # dfpk = dfpk[(dfpk['r'] > target_radius_limits[0]) & (dfpk['r'] < target_radius_limits[1])]
+        profile_radius_limits = [dfpk.r.min(), dfpk.r.max()]
+        profile_samples = len(dfpk)
+        profile_sampling_rate = profile_samples / (profile_radius_limits[1] - profile_radius_limits[0])
+
+        max_sampling_rate = np.max([target_sampling_rate, profile_sampling_rate])
+
+        tx, ty = process.resample_array(x=dft.r.to_numpy(), y=dft.z.to_numpy(), num_points=None,
+                                        sampling_rate=max_sampling_rate)
+        px, py = process.resample_array(x=dfpk.r.to_numpy(), y=dfpk.z.to_numpy(), num_points=None,
+                                        sampling_rate=max_sampling_rate)
+
+        corr = process.correlate_signals(ty, py)
+        corr_idxmax = np.argmax(corr)
+        corr = corr / np.max(corr)
+
+        # ---
+
+        import matplotlib.pyplot as plt
+
+        fig, (ax1, ax2, ax3) = plt.subplots(nrows=3, figsize=(4.25, 3.75))
+        ax1.plot(dft.r, dft.z, 'r-', alpha=1, label='Target')
+        ax1.plot(dfpk.r, dfpk.z, linestyle='--', color='b', label='Profile')
+        ax1.set_xlabel('r')
+        ax1.legend()
+
+        ax2.plot(ty, color='r', label='Target')
+        ax2.plot(py, linestyle='--', color='b', label='Profile')  # [corr_idxmax // 2: -corr_idxmax // 2]
+        ax2.set_xlabel('index')
+        ax2.legend()
+
+        ax3.plot(np.arange(len(corr)), corr, 'o')
+        ax3.legend()
+        ax3.set_xlabel('index')
+
+        plt.tight_layout()
+        plt.show()
+
+    def calculate_exposure_dose_depth_relationship(self, z_standoff=-0.125):
+        # inputs
+        num_points = 2 ** 8  # 8-bit exposure resolution
+
+        # datasets
+        rdf = self.fold_dfpk.copy()  # 'exposure profile'
+        dfe = self.dfe.copy()  # 'dose profile'
+
+        # 2. perform rolling average to smooth (before filtering 'r' to reduce edge effects) (1 sample every 25 microns)
+        folded_sampling_rate = len(rdf) / rdf.r.max()
+        rolling_window = int(np.round(25 / folded_sampling_rate, 0))
+        rdf = rdf.rolling(rolling_window, min_periods=1).mean()
+
+        # filter: get z < z_standoff because many values at zero exposure depth throws off curve_fit
+        rdf = rdf[rdf['z'] < z_standoff]
+
+        # maximum radial coordinates we can analyze (may depend on design or on profilometry data)
+        radius_extent = np.min([rdf.r.max(), self.dr])
+
+        # 3. get r < outer radius of data
+        rdf = rdf[rdf['r'].abs() < radius_extent]
+        dfe = dfe[dfe['r'] < radius_extent]
+
+        # 4. interpolate: (a) exposure profile; (b) dose profile
+        ddf = process.downsample_dataframe(df=rdf, xcol='r', ycol='z', num_points=num_points, sampling_rate=None)
+        ddfe = process.interpolate_dataframe(df=dfe, xcol='r', ycol='exposure_dose', num_points=num_points)
+
+        # 5. slice and recombine these profiles to create the exposure mapping function
+        dfmap_dose_to_depth = pd.DataFrame({'exposure_dose': ddfe.exposure_dose,
+                                            'exposure_r': ddfe.r,
+                                            'z': ddf.z,
+                                            'profile_r': ddf.r,
+                                            }
+                                           )
+
+        # 6. get functions limits
+        depth_limits = [dfmap_dose_to_depth.z.min(), dfmap_dose_to_depth.z.max()]
+        dose_limits = [dfmap_dose_to_depth.exposure_dose.min(), dfmap_dose_to_depth.exposure_dose.max()]
+
+        # 7. calculate mapping functions
+        dfmap_, dose_func, dose_popt = process.fit_func_dataframe(df=dfmap_dose_to_depth,
+                                                                  xcol='z',
+                                                                  ycol='exposure_dose',
+                                                                  fit_func='exp_four',
+                                                                  num_points=num_points,
+                                                                  )
+
+        dfmap_, depth_func, depth_popt = process.fit_func_dataframe(df=dfmap_dose_to_depth,
+                                                                    xcol='exposure_dose',
+                                                                    ycol='z',
+                                                                    fit_func='exp_four',
+                                                                    num_points=num_points,
+                                                                    )
+
+        self.exposure_func = {'depth_limits': depth_limits,
+                              'z_standoff': z_standoff,
+                              'dose_limits': dose_limits,
+                              'depth_func': depth_func,
+                              'depth_popt': depth_popt,
+                              'dose_func': dose_func,
+                              'dose_popt': dose_popt,
+                              'dfmap': dfmap_dose_to_depth,
+                              }
+
+    def calculate_correct_exposure_profile(self, amplitude=None, z_standoff=0, dose=None, bit_resolution=None):
+
+        # calculate amplitude of target exposure profile
+        depth_range = self.exposure_func['depth_limits']
+
+        if amplitude is None:
+            amplitude = depth_range[1] - depth_range[0] - z_standoff
+
+        if dose is None:
+            dose = self.dose
+
+        if bit_resolution is None:
+            bit_resolution = self.bit_resolution
+
+        # resize target profile to fit new target
+        self.resize_target_profile(radius=self.target_radius, amplitude=amplitude)
+        dft = self.dft
+
+        # add z standoff
+        dft['z'] = dft['z'] - z_standoff
+
+        # calculate layers according to dose and resolution
+        arr_z = dft.z.to_numpy()
+        arr_popt = self.exposure_func['dose_popt']
+        dft['exposure_intensity'] = self.exposure_func['dose_func'](arr_z, *arr_popt)
+        dft['l'] = dft['exposure_intensity'] / dose * bit_resolution
+
+    @property
+    def mdfe(self):
+        dfe_mirrored = self.dfe.copy()
+        dfe_mirrored['r'] = dfe_mirrored['r'] * -1
+        mdfe = pd.concat([dfe_mirrored, self.dfe.copy()])
+        mdfe = mdfe.sort_values('r')
+        return mdfe
+
+    @property
+    def fold_dfpk(self):
+        df = self.dfpk.copy()
+        df_r = df[df['r'] > 0]
+        df_l = df[df['r'] < 0]
+        df_l['r'] = df_l['r'] * -1
+        fold_dfpk = pd.concat([df_l, df_r])
+        fold_dfpk = fold_dfpk.sort_values('r')
+        return fold_dfpk
+
+
+# ------------------------------------------------------------------------------------------------------------------
+# UTILITY FUNCTIONS
+
+def initialize_designs(base_path, design_lbls, target_lbls, design_locs=None, design_ids=None):
     """
 
-    :param wid: wafer ID
     :param base_path: top-level directory for wafer
+    :param design_lbls: string identifier, must match data files for each feature (coordinates: x, y, r, l)
+    :param target_lbls: string identifier, must match data files for each feature (coordinates: r, z)
     :param design_ids: numeric identifier for each design (e.g., 0, 1, 2,...)
-    :param design_lbls: string identifier, must match data files for each feature
     :param design_locs: the location of each feature in the mask design file
     :return:
     """
 
+    if design_locs is None:
+        design_locs = [[0, 0]]
+
+    if design_ids is None:
+        design_ids = np.arange(1, len(design_locs) + 1)
+
     designs = {}
-    for k, design_lbl, design_loc in zip(design_ids, design_lbls, design_locs):
-        # for design_loc in design_locs:
-        path_design = join(base_path, 'mask', 'w{}_{}.xlsx'.format(wid, design_lbl))
-        path_target = join(base_path, 'mask', 'target-profile_{}.xlsx'.format(design_lbl))
+    for k, design_loc, design_lbl, target_lbl in zip(design_ids, design_locs, design_lbls, target_lbls):
+        path_design = join(base_path, 'mask', '{}.xlsx'.format(design_lbl))
+        path_target = join(base_path, 'mask', 'target-profile_{}.xlsx'.format(target_lbl))
 
         designs.update({k: GraycartFeature(did=k,
                                            dlbl=design_lbl,
@@ -187,20 +407,12 @@ def initialize_designs(wid, base_path, design_ids, design_lbls, design_locs):
     return designs
 
 
-def initialize_design_features(designs, design_spacing, dose_lbls, focus_lbls, dose, dose_step, focus, focus_step, fem_dxdy):
-    """
+def initialize_design_features(designs, design_spacing, dose_lbls, focus_lbls, process_flow, fem_dxdy,
+                               target_radius, target_depth=None):
 
-    :param designs:
-    :param design_spacing:
-    :param dose_lbls:
-    :param focus_lbls:
-    :param dose:
-    :param dose_step:
-    :param focus:
-    :param focus_step:
-    :param fem_dxdy:
-    :return:
-    """
+    dose, dose_step, focus, focus_step = parse_items_from_process_flow(process_flow,
+                                                                       process_type='Expose',
+                                                                       items=['Dose', 'Dose Step', 'Focus', 'Focus Step'])
 
     features = {}
     ij = 0
@@ -226,9 +438,19 @@ def initialize_design_features(designs, design_spacing, dose_lbls, focus_lbls, d
                                                              dose=feature_dose,
                                                              focus=feature_focus,
                                                              feature_spacing=design_spacing,
+                                                             target_radius=target_radius,
+                                                             target_depth=target_depth,
                                                              )
                                  }
                                 )
                 ij += 1
 
     return features
+
+
+def parse_items_from_process_flow(process_flow, process_type, items):
+    item_list = []
+    for step, details in process_flow.items():
+        if details['process_type'] == process_type:
+            item_list = [details['details'][item] for item in items]
+    return item_list
