@@ -56,15 +56,52 @@ target_depth_profile = 50
 
 # data processing
 evaluate_signal_processing = False  # True
-lambda_peak_rel_height = lambda x: min([0.94 + x / 100, 0.9875])
+lambda_peak_rel_height = lambda x: min([0.95 + x / 100, 0.9875])
 z_standoff_measure = -0.125
-z_standoff_design = 0.75
+z_standoff_design = 1
 
+thickness_PR = 7.5
+thickness_PR_budget = 1.5
 
 # WAFER
-for wid in [15]:  # np.arange(12, 18):  # 15, 14, 13, 12
+for wid in [19]:  # np.arange(12, 18):  # 15, 14, 13, 12
+    if wid == 19:
+        # DESIGN
+        design_lbls = ['erf5']
+        target_lbls = ['erf5']
+        design_ids = [0]
+        design_spacing = 5e3
+        design_locs = [[0, n * design_spacing] for n in np.arange(-1, 2)]
 
-    if wid == 17:
+        # field exposure matrix
+        dose_lbls = ['a', 'b', 'c']  # , 'c', 'd', 'e'
+        focus_lbls = [1]
+        fem_dxdy = [0e3, 0e3]
+
+        # data processing
+        perform_rolling_on = False  # [[3, 'b1', 25]]
+        features_of_interest = ['a1', 'b1', 'c1']
+        target_radius = 2050  # microns
+
+    elif wid == 18:
+        # DESIGN
+        design_lbls = ['erf5']
+        target_lbls = ['erf5']
+        design_ids = [0]
+        design_spacing = 5e3
+        design_locs = [[0, n * design_spacing] for n in np.arange(-1, 2)]
+
+        # field exposure matrix
+        dose_lbls = ['a', 'b', 'c']  # , 'c', 'd', 'e'
+        focus_lbls = [1]
+        fem_dxdy = [0e3, 0e3]
+
+        # data processing
+        perform_rolling_on = False  # [[3, 'b1', 25]]
+        features_of_interest = ['a1', 'b1', 'c1']
+        target_radius = 2050  # microns
+
+    elif wid == 17:
         # DESIGN
         design_lbls = ['erf5_LrO']
         target_lbls = ['erf5_LrO']
@@ -224,7 +261,6 @@ for wid in [15]:  # np.arange(12, 18):  # 15, 14, 13, 12
     step_develop = 3
     save_all_results = False
 
-
     # ------------------------------------------------------------------------------------------------------------------
 
     wfr = evaluate_wafer_flow(wid, base_path, fn_pflow, path_results, profilometry_tool,
@@ -240,8 +276,8 @@ for wid in [15]:  # np.arange(12, 18):  # 15, 14, 13, 12
 
     wfr.backout_process_to_achieve_target(target_radius=target_radius,
                                           target_depth=target_depth_profile,
-                                          thickness_PR=7.5,
-                                          thickness_PR_budget=1.5,
+                                          thickness_PR=thickness_PR,
+                                          thickness_PR_budget=thickness_PR_budget,
                                           save_fig=True)
 
     wfr.compare_target_to_feature_evolution(px='r', py='z', save_fig=True)
@@ -273,7 +309,7 @@ for wid in [15]:  # np.arange(12, 18):  # 15, 14, 13, 12
         # wfr.grade_profile_accuracy(step=max(wfr.list_steps), target_radius=target_radius, target_depth=target_depth_profile)
 
         # plot exposure profile
-        """for foi in features_of_interest:
+        for foi in features_of_interest:
             gpf = wfr.features[foi]
             plotting.plot_exposure_profile(gcf=gpf, path_save=join(wfr.path_results, 'figs'), save_type=save_type)
 
@@ -284,7 +320,7 @@ for wid in [15]:  # np.arange(12, 18):  # 15, 14, 13, 12
                                                                 path_save=join(wfr.path_results, 'figs'),
                                                                 save_type=save_type,
                                                                 )
-        """
+
     # ---
 
     print("test_flow.py completed without errors.")

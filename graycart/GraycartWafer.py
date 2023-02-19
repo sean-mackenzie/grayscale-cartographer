@@ -114,7 +114,7 @@ class GraycartWafer(object):
 
     def backout_process_to_achieve_target(self,
                                           target_radius, target_depth,
-                                          thickness_PR=7.5, thickness_PR_budget=1.5,
+                                          thickness_PR=7.5, thickness_PR_budget=1.5, r_target=20,
                                           save_fig=False, path_save=None, save_type='.png'):
 
         if path_save is None and save_fig is True:
@@ -133,9 +133,9 @@ class GraycartWafer(object):
                                                                          px='r',
                                                                          py='z',
                                                                          pys='z_surf',
-                                                                         thickness_PR=7.5,
-                                                                         thickness_PR_budget=1.5,
-                                                                         r_target=5,
+                                                                         thickness_PR=thickness_PR,
+                                                                         thickness_PR_budget=thickness_PR_budget,
+                                                                         r_target=r_target,
                                                                          did=did,
                                                                          )
 
@@ -339,13 +339,14 @@ class GraycartWafer(object):
         self.estimated_target_profiles(px, py='z_surf', include_target=True, save_fig=save_fig, save_type='.png')
 
         for did in dids:
-            pass
 
-            """self.compare_target_to_features_by_process(px=px, py='z_surf', did=did, normalize=False, save_fig=save_fig,
+            self.compare_target_to_features_by_process(px=px, py='z_surf', did=did, normalize=False, save_fig=save_fig,
                                                        save_type='.png')
             for norm in [False, True]:
                 self.compare_target_to_features_by_process(px=px, py=py, did=did, normalize=norm, save_fig=save_fig,
-                                                           save_type='.png')"""
+                                                           save_type='.png')
+
+        raise ValueError
 
     def compare_exposure_functions(self, process_types=None):
         if process_types is None:

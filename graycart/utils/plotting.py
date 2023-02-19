@@ -54,7 +54,7 @@ def plot_target_profile_and_process_flow_backout(dft, est_process_flow, path_sav
                     )
     else:
         plt.show()
-    j = 1
+
     plt.close()
 
 
@@ -558,13 +558,18 @@ def estimated_target_profiles(gcw, px, py, include_target=True, save_fig=False, 
         dff = df[(df['fid'] == fid)]
         steps = dff.step.unique()
 
-        if len(steps) > 1:
+        if len(steps) > 0:
 
             # plot
-            fig, axs = plt.subplots(nrows=len(steps), ncols=2,
-                                    sharex=True,
-                                    figsize=(size_x_inches * 2, size_y_inches * (len(steps) - 1) / 1.25),
-                                    facecolor='white')
+            if len(steps) == 1:
+                fig, axs = plt.subplots(ncols=2,
+                                        figsize=(size_x_inches * 2, size_y_inches),
+                                        facecolor='white')
+            else:
+                fig, axs = plt.subplots(nrows=len(steps), ncols=2,
+                                        sharex=True,
+                                        figsize=(size_x_inches * 2, size_y_inches * (len(steps) - 1) / 1.25),
+                                        facecolor='white')
 
             if np.size(axs) < 3:
                 axs = [axs]
@@ -592,8 +597,8 @@ def estimated_target_profiles(gcw, px, py, include_target=True, save_fig=False, 
                 # estimate process flow and profile
                 est_process_flow = process.estimate_process_to_achieve_target(dfds, px, py,
                                                                               target_depth=50,
-                                                                              thickness_PR_budget=0.7,
-                                                                              r_target=50,
+                                                                              thickness_PR_budget=1.95,
+                                                                              r_target=5,
                                                                               )
                 # ---
 
