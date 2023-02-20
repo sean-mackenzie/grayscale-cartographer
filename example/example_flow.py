@@ -1,4 +1,5 @@
 from os.path import join
+import tkinter as tk #tkinter for GUI
 from graycart.GraycartWafer import GraycartWafer
 from graycart.GraycartFeature import initialize_designs, initialize_design_features
 from graycart.utils import io, plotting
@@ -45,7 +46,7 @@ Functions:
 """
 # inputs
 wid = 11
-base_path = '/Users/mackenzie/Desktop/Zipper/Fabrication/Wafer{}'.format(wid)
+base_path = '/Users\simon\Documents\Simels_daten\Epfl\sem_13_2022_Master_theis_USA\grayscale-cartographer\example\Wafer{}'.format(wid)
 fn_pflow = 'process-flow_w{}.xlsx'.format(wid)
 path_results = 'results'
 save_type = '.png'
@@ -203,14 +204,13 @@ wfr.evaluate_process_profilometry(plot_fits=save_profilometry_processing_figures
 
 wfr.merge_processes_profilometry(export=save_merged_profilometry_data)
 
-wfr.merge_exposure_doses_to_process_depths(export=True)
 
 # ----------------------------------------------------------------------------------------------------------------------
 # END PRIMARY DATA PROCESSING FUNCTIONS
 # ----------------------------------------------------------------------------------------------------------------------
 
 """
-At this point, all of the data has been parsed and structured. The following functions can be optionally called to 
+At this point, all of the data has been parsed and structured. The following functions can be optionally called to
 interpret the data.
 """
 
@@ -227,7 +227,7 @@ for foi in features_of_interest:
 # ---
 
 """
-'backout_process_to_achieve_target' starts with your 'target_profile' and reverse engineers what processes you should 
+'backout_process_to_achieve_target' starts with your 'target_profile' and reverse engineers what processes you should
 run and how you should pattern your photoresist.
 """
 thickness_PR = 7.5  # photoresist thickness, this variable could be interpreted from process_flow or inputted here.
@@ -244,7 +244,7 @@ wfr.backout_process_to_achieve_target(target_radius=target_radius,
 
 """
 'compare_target_to_feature_evolution' plots your profilometry data (i.e., 'features') on top of your target profile for
-each step in your process flow. The variables 'px' and 'py' are which coordinates you want to plot. 
+each step in your process flow. The variables 'px' and 'py' are which coordinates you want to plot.
 """
 wfr.compare_target_to_feature_evolution(px='r', py='z', save_fig=True)
 
@@ -257,6 +257,7 @@ photoresist depth (microns). 'z_standoff_measure
 wfr.characterize_exposure_dose_depth_relationship(plot_figs=True,
                                                   save_type=save_type,
                                                   )
+wfr.merge_exposure_doses_to_process_depths(export=True)
 
 # ---
 

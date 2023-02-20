@@ -5,12 +5,16 @@ import pandas as pd
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-
+import scienceplots
 # ---
+# plt.style.use(['science', 'ieee', 'std-colors'])  # , 'std-colors'
 
-base_dir = '/Users/mackenzie/Desktop/Zipper/Fabrication'
-fn = 'w{}_merged_dose-depths.xlsx'
-
+base_dir = '/Users\simon\Documents\Simels_daten\Epfl\sem_13_2022_Master_theis_USA\grayscale-cartographer\example\Wafer11\mask'
+fn = 'erf3.xlsx'
+df = pd.read_excel(base_dir+'/'+ fn)
+plt.figure()
+plt.plot(df.r,df.l)
+plt.show()
 # ---
 
 px = 'exposure_dose'

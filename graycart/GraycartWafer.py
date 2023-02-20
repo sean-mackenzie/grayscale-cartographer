@@ -346,7 +346,7 @@ class GraycartWafer(object):
                 self.compare_target_to_features_by_process(px=px, py=py, did=did, normalize=norm, save_fig=save_fig,
                                                            save_type='.png')
 
-        raise ValueError
+        # raise ValueError
 
     def compare_exposure_functions(self, process_types=None):
         if process_types is None:

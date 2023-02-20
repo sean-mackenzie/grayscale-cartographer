@@ -16,8 +16,7 @@ scipurple = '#845B97'
 sciblack = '#474747'
 scigray = '#9e9e9e'
 sci_color_list = [sciblue, scigreen, scired, sciorange, scipurple, sciblack, scigray]
-
-plt.style.use(['science', 'ieee', 'std-colors'])  # , 'std-colors'
+# plt.style.use(['science', 'ieee', 'std-colors'])  # , 'std-colors'
 fig, ax = plt.subplots()
 size_x_inches, size_y_inches = fig.get_size_inches()
 plt.close(fig)
