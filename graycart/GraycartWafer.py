@@ -3,6 +3,7 @@ from os import makedirs
 from collections import OrderedDict
 from copy import deepcopy
 
+import numpy as np
 import pandas as pd
 
 from .GraycartProcess import GraycartProcess
@@ -240,7 +241,7 @@ class GraycartWafer(object):
                                                       plot_figs=False, save_type='.png'):
 
         if process_type is None:
-            process_type = ['Expose', 'Develop', 'Thermal Reflow']
+            process_type = ['Develop', 'Thermal Reflow']
 
         if not isinstance(process_type, list):
             process_type = [process_type]
@@ -296,11 +297,16 @@ class GraycartWafer(object):
         for gcf in self.processes[step].features.values():
             if isinstance(gcf, ProcessFeature):
                 gcf.calculate_profile_to_target_error(target_radius, target_depth)
-                res.append([gcf.fid, gcf.target_rmse, gcf.target_rmse_percent_depth, gcf.target_r_squared])
-                gcf.correlate_profile_to_target()
+                gcf.calculate_volume_to_target_error()
+                res.append([gcf.fid, gcf.target_rmse, gcf.target_rmse_percent_depth, gcf.target_r_squared,
+                            gcf.volume, gcf.target_volume_error])
 
-        import numpy as np
-        res = pd.DataFrame(np.array(res), columns=['fid', 'rmse', 'rmse_percent_depth', 'r_sq'])
+                plotting.plot_profile_to_target_error(gcf, path_save=join(self.path_results, 'figs'), save_type='.png')
+
+                # gcf.correlate_profile_to_target()
+
+        res = pd.DataFrame(np.array(res), columns=['fid', 'rmse', 'rmse_percent_depth', 'r_sq', 'vol', 'err_vol'])
+        res.to_excel(join(self.path_results, 'profile_accuracy_rmse.xlsx'))
         print(res)
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -345,8 +351,6 @@ class GraycartWafer(object):
             for norm in [False, True]:
                 self.compare_target_to_features_by_process(px=px, py=py, did=did, normalize=norm, save_fig=save_fig,
                                                            save_type='.png')
-
-        raise ValueError
 
     def compare_exposure_functions(self, process_types=None):
         if process_types is None:

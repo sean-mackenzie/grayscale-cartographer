@@ -4,7 +4,6 @@ import numpy as np
 from graycart.GraycartWafer import evaluate_wafer_flow
 from graycart.utils import plotting
 
-
 # ----------------------------------------------------------------------------------------------------------------------
 # INPUTS
 
@@ -64,7 +63,7 @@ thickness_PR = 7.5
 thickness_PR_budget = 1.5
 
 # WAFER
-for wid in [19]:  # np.arange(12, 18):  # 15, 14, 13, 12
+for wid in [18]:  # np.arange(12, 18)
     if wid == 19:
         # DESIGN
         design_lbls = ['erf5']
@@ -82,6 +81,7 @@ for wid in [19]:  # np.arange(12, 18):  # 15, 14, 13, 12
         perform_rolling_on = False  # [[3, 'b1', 25]]
         features_of_interest = ['a1', 'b1', 'c1']
         target_radius = 2050  # microns
+        target_depth_profile = 45
 
     elif wid == 18:
         # DESIGN
@@ -274,13 +274,14 @@ for wid in [19]:  # np.arange(12, 18):  # 15, 14, 13, 12
                               evaluate_signal_processing=evaluate_signal_processing,
                               )
 
+    # grade target accuracy
+    wfr.grade_profile_accuracy(step=max(wfr.list_steps), target_radius=target_radius, target_depth=target_depth_profile)
+
     wfr.backout_process_to_achieve_target(target_radius=target_radius,
                                           target_depth=target_depth_profile,
                                           thickness_PR=thickness_PR,
                                           thickness_PR_budget=thickness_PR_budget,
-                                          save_fig=True)
-
-    wfr.compare_target_to_feature_evolution(px='r', py='z', save_fig=True)
+                                          save_fig=save_all_results)
 
     wfr.characterize_exposure_dose_depth_relationship(z_standoff=z_standoff_measure,
                                                       plot_figs=save_all_results,
@@ -304,9 +305,6 @@ for wid in [19]:  # np.arange(12, 18):  # 15, 14, 13, 12
 
         # compare target to features
         wfr.compare_target_to_feature_evolution(px='r', py='z', save_fig=save_all_results)
-
-        # grade target accuracy
-        # wfr.grade_profile_accuracy(step=max(wfr.list_steps), target_radius=target_radius, target_depth=target_depth_profile)
 
         # plot exposure profile
         for foi in features_of_interest:

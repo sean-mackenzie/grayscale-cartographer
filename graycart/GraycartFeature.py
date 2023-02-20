@@ -6,6 +6,7 @@ from pandas import read_excel
 import pandas as pd
 import numpy as np
 from scipy.special import erf
+from scipy import integrate
 
 from graycart.utils import process, fit
 
@@ -169,6 +170,10 @@ class ProcessFeature(WaferFeature):
         self.target_rmse = None
         self.target_rmse_percent_depth = None
         self.target_r_squared = None
+        self.target_corr = None
+        self.target_volume = None
+        self.volume = None
+        self.target_volume_error = None
 
     def __repr__(self):
         class_ = 'ProcessFeature'
@@ -210,6 +215,14 @@ class ProcessFeature(WaferFeature):
         self.target_rmse_percent_depth = rmse / target_depth * 100
         self.target_r_squared = r_squared
 
+    def calculate_volume_to_target_error(self):
+        """ units: nanoliters (nL) """
+        # area_target = integrate.trapezoid(self.mdft.z, self.mdft.r)
+        # area_profile = integrate.trapezoid(self.dfpk.z, self.dfpk.r)
+        self.target_volume = process.integrate_dataframe_radial(self.mdft, ycol='z', xcol='r', num_slices=100)
+        self.volume = process.integrate_dataframe_radial(self.dfpk, ycol='z', xcol='r', num_slices=100)
+        self.target_volume_error = self.volume - self.target_volume
+
     def correlate_profile_to_target(self, target_radius=None, target_depth=None):
         if target_depth is not None:
             self.resize_target_profile(radius=target_radius, amplitude=target_depth)
@@ -236,28 +249,7 @@ class ProcessFeature(WaferFeature):
         corr = process.correlate_signals(ty, py)
         corr_idxmax = np.argmax(corr)
         corr = corr / np.max(corr)
-
-        # ---
-
-        import matplotlib.pyplot as plt
-
-        fig, (ax1, ax2, ax3) = plt.subplots(nrows=3, figsize=(4.25, 3.75))
-        ax1.plot(dft.r, dft.z, 'r-', alpha=1, label='Target')
-        ax1.plot(dfpk.r, dfpk.z, linestyle='--', color='b', label='Profile')
-        ax1.set_xlabel('r')
-        ax1.legend()
-
-        ax2.plot(ty, color='r', label='Target')
-        ax2.plot(py, linestyle='--', color='b', label='Profile')  # [corr_idxmax // 2: -corr_idxmax // 2]
-        ax2.set_xlabel('index')
-        ax2.legend()
-
-        ax3.plot(np.arange(len(corr)), corr, 'o')
-        ax3.legend()
-        ax3.set_xlabel('index')
-
-        plt.tight_layout()
-        plt.show()
+        self.target_corr = corr
 
     def calculate_exposure_dose_depth_relationship(self, z_standoff=-0.125):
         # inputs

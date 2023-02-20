@@ -422,6 +422,21 @@ def interpolate_dataframe(df, xcol, ycol, num_points, sampling_rate=None):
     return df
 
 
+def integrate_dataframe_radial(df, ycol, xcol, num_slices):
+    """
+    V = process.integrate_dataframe_radial(df, ycol, xcol, num_slices)
+    """
+    h = np.linspace(0, df[ycol].min(), num_slices)
+    dh = np.abs(h[1])
+    V = 0
+    for i in range(len(h) - 1):
+        dV = np.pi * df[(df[ycol] <= h[i]) & (df[ycol] > h[i + 1])][xcol].abs().mean() ** 2 * dh
+        if np.isnan(dV):
+            dV = 0
+        V += dV
+    return V * 1e-6
+
+
 def fit_func_dataframe(df, xcol, ycol, fit_func, num_points):
     """
     df, fit_func, popt = process.fit_func_dataframe(df, xcol, ycol, fit_func, num_points)

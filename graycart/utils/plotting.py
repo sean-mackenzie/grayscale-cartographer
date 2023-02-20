@@ -38,9 +38,9 @@ def plot_target_profile_and_process_flow_backout(dft, est_process_flow, path_sav
 
     for est_step, est_prcss in est_process_flow.items():
         ax2.plot(est_prcss['df']['r'], est_prcss['df']['z_surf'],
-                   label="Pred., Step {}: {} s, {}".format(est_step + 1,
-                                                           int(np.round(est_prcss['time'], 1)),
-                                                           est_prcss['recipe']),
+                 label="Pred., Step {}: {} s, {}".format(est_step + 1,
+                                                         int(np.round(est_prcss['time'], 1)),
+                                                         est_prcss['recipe']),
                  )
 
     ax2.set_ylabel(r'$z \: (\mu m)$')
@@ -50,7 +50,8 @@ def plot_target_profile_and_process_flow_backout(dft, est_process_flow, path_sav
     plt.tight_layout()
     if path_save is not None:
         plt.savefig(join(path_save, 'figs',
-                         'target-profile-and-backout-process-flow_did-{}'.format(est_process_flow[0]['did']) + save_type),
+                         'target-profile-and-backout-process-flow_did-{}'.format(
+                             est_process_flow[0]['did']) + save_type),
                     )
     else:
         plt.show()
@@ -607,14 +608,15 @@ def estimated_target_profiles(gcw, px, py, include_target=True, save_fig=False, 
                 ax[0].set_ylabel(r'$z \: (\mu m)$')
                 ax[0].legend(loc='upper center')
 
-                ax[1].plot(dfds[px], dfds[py], '.', ms=0.5, label="Meas., Step {}: {} s, {}".format(step, p_time, p_recipe))
+                ax[1].plot(dfds[px], dfds[py], '.', ms=0.5,
+                           label="Meas., Step {}: {} s, {}".format(step, p_time, p_recipe))
 
                 z_amplitude = dfds[py].min()
                 for est_step, est_prcss in est_process_flow.items():
                     ax[1].plot(est_prcss['df'][px], est_prcss['df'][py], '.', ms=0.5,
                                label="Pred., Step {}: {} s, {}".format(step + est_step + 1,
-                                                                int(np.round(est_prcss['time'], 1)),
-                                                                est_prcss['recipe']),
+                                                                       int(np.round(est_prcss['time'], 1)),
+                                                                       est_prcss['recipe']),
                                )
 
                     z_amplitude = est_prcss['z_min']
@@ -632,7 +634,8 @@ def estimated_target_profiles(gcw, px, py, include_target=True, save_fig=False, 
                     if mdft['r'].max() < dfds[px].max() / 10:
                         mdft['r'] = mdft['r'] * target_radius / 2
                     if mdft['z'].abs().max() < dfds[py].abs().max() / 5:
-                        mdft['z'] = mdft['z'] / mdft['z'].abs().max() * np.abs(z_amplitude)  # normalize then adjust amplitude
+                        mdft['z'] = mdft['z'] / mdft['z'].abs().max() * np.abs(
+                            z_amplitude)  # normalize then adjust amplitude
 
                     ax[1].plot(mdft['r'], mdft['z'], linewidth=0.75, linestyle='dotted', color='k', label="Target")
 
@@ -1070,6 +1073,35 @@ def plot_exposure_functions(gpf, path_save=None, save_type='.png'):
     if path_save is not None:
         plt.savefig(join(path_save, 'funcs-dose-depth_step{}-{}_{}_fid{}'.format(gpf.step, gpf.process_type, gpf.label,
                                                                                  gpf.fid) + save_type),
+                    )
+    else:
+        plt.show()
+    plt.close()
+
+
+def plot_profile_to_target_error(gcf, path_save=None, save_type='.png'):
+    dft = gcf.mdft.copy()
+    dfpk = gcf.dfpk.copy()
+
+    fig, ax = plt.subplots(figsize=(size_x_inches * 1.25, size_y_inches * 0.75))
+
+    ax.plot(dft.r, dft.z, 'r-', alpha=1, label='Target')
+    ax.plot(dfpk.r, dfpk.z, linestyle='--', color='b', label='Profile')
+    ax.set_xlabel(r'$r \: (\mu m)$')
+    ax.set_ylabel(r'$z \: (\mu m)$')
+    ax.legend()
+
+    ax.set_title(r'$\sigma_{z} = $' + ' {} '.format(np.round(gcf.target_rmse, 1)) + r'$\mu m,$' + ' ' +
+                 '(' + r'$\sigma_{z}/h = $' + ' {}\%'.format(np.round(gcf.target_rmse_percent_depth, 1)) + ')',
+                 )
+    plt.suptitle(r'$V = $' + ' {} nL, '.format(int(np.round(gcf.volume, 0))) +
+                 r'$\frac {V - V_{target}} {V_{target}}= $' +
+                 ' {}\%'.format(np.round(gcf.target_volume_error / gcf.target_volume * 100, 1)))
+
+    plt.tight_layout()
+    if path_save is not None:
+        plt.savefig(join(path_save,
+                         'profile-accuracy_step{}_{}_fid{}'.format(gcf.step, gcf.label, gcf.fid) + save_type),
                     )
     else:
         plt.show()
