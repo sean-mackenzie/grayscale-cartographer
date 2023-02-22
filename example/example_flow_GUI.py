@@ -260,7 +260,7 @@ def init_featuresDesigns():
             plot1.clear()
             plot1.grid()
             canvas.draw()
-            root.update()
+            root.update()  #
             for i in design_locs:
                 Features = cicleXY(i,target_radius)
                 plotFeatures(Features.xcir,Features.ycir)
