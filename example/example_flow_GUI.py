@@ -95,10 +95,10 @@ def read_processFlow():
         fn_pflow_err = 'Or your File name of the process flow'
         Output.delete("1.0", "end")
         Output.insert("1.0", "Step 1 errors:" + '\n'
-                      +"your scrwed up" + '\n'
-                      +'1) '+ base_path_err + '\n'
-                      +'2) '+ fn_pflow_err + '\n'
-                      +'3) '+ wid_err +'\n'
+                      +"You scrwed up" + '\n'
+                      +'Wafer ID error:- '+wid_err+ '\n'
+                      +'Data path error:- '+base_path_err+ '\n'
+                      +'Process flow name error:- '+fn_pflow_err+'\n'
                       )
         process_flow = False
     return process_flow
@@ -154,25 +154,30 @@ fem_dxdy = [10e3, 10e3]
 # initialize 'designs'
 def init_featuresDesigns():
     global designs
+    designs_err = ''
     global features
 
-    designs_err = ''
-    global design_spacing
-    design_spacing_err = ''
-    global design_lbls
+    global target_radius
+    target_radius_err = ''
     global target_lbls
+    target_lbls_err = ''
+    global target_depth_profile
+    target_depth_profile_err=''
     global design_locs
     design_locs_err = ''
+    global design_spacing
+    design_spacing_err = ''
     global design_ids
     design_ids_err=''
-    global target_depth_profile
+    global design_lbls
+    design_lbls_err = ''
     global dose_lbls
+    dose_lbls_err=''
     global focus_lbls
     focus_lbls_err = ''
     global fem_dxdy
     fem_dxdy_err = ''
-    global target_radius
-    target_radius_err = ''
+
 
     design_spacing = design_spacing_Txt.get().replace(' ', '')
     if design_spacing.replace('.', '', 1).replace('e', '', 1).isdigit():
@@ -249,12 +254,12 @@ def init_featuresDesigns():
                           + 'Target radius: ' + target_radius_Txt.get() + '\n'
                           + 'Target labels: ' + target_lbls_Txt.get() + '\n'
                           + 'Target depth: ' + target_depth_profile_Txt.get() + '\n'
+                          + 'Design locations: ' + design_locs_Txt.get() + '\n'
+                          + 'Design spacing: ' + design_spacing_Txt.get() + '\n'
+                          + 'Design indices ' + design_ids_Txt.get() + '\n'
+                          + 'Design labels ' + design_lbls_Txt.get() + '\n'
                           + 'Dose labels: '+dose_lbls_Txt.get()+'\n'
                           + 'Focus labels: ' + focus_lbls_Txt.get() + '\n'
-                          + 'Design location: ' + design_locs_Txt.get() + '\n'
-                          + 'Desing spacing: '+design_spacing_Txt.get()+'\n'
-                          + 'Design indices '+design_ids_Txt.get()+'\n'
-                          + 'Design labels '+ design_lbls_Txt.get()+'\n'
                           + 'Fem_dxdy is: '+fem_dxdy_Txt.get()+'\n'
                           )
             plot1.clear()
@@ -269,13 +274,17 @@ def init_featuresDesigns():
             Output.delete("1.0", "end")
             Output.insert("1.0", "Step 2 Feature errors:" + '\n'
                           + "You scrwed up" + '\n'
-                          + '1)- '+designs_err + '\n'
-                          + '2)- '+design_ids_err + '\n'
-                          + '3)- '+design_spacing_err + '\n'
-                          + '4)- '+design_locs_err + '\n'
-                          + '5)- '+focus_lbls_err + '\n'
-                          + '6)- '+target_radius_err + '\n'
-                          + '7)- '+fem_dxdy_err + '\n\n')
+                          + 'Target radius err:- ' + target_radius_err + '\n'
+                          + 'Target labels err:- ' + target_lbls_err + '\n'
+                          + 'Target depth err:- ' + target_depth_profile_err + '\n'
+                          + 'Design err:- '+designs_err + '\n'
+                          + 'Design locations err:- ' + design_locs_err + '\n'
+                          + 'Design spacing err:- ' + design_spacing_err + '\n'
+                          + 'Design indices err:- '+design_ids_err + '\n'
+                          + 'Design labels err:- ' + design_lbls_err + '\n'
+                          + 'Dose labels err:- ' + dose_lbls_err + '\n'
+                          + 'Focus label err:- '+focus_lbls_err + '\n'
+                          + 'Fem_dxdy err:- '+fem_dxdy_err + '\n\n')
     else:
         Output.delete("1.0", "end")
         Output.insert("1.0", "Step 2 Desing errors:" + '\n'
@@ -590,7 +599,7 @@ if __name__ == '__main__':
     root.update()
 
     # WA string that identifies which design this data (profilometry, image, etc) belongs to.  design_lbls
-    design_lbls_label = tk.Label(root, text="Design Label (str)", font=("Helvetica", letter_size))
+    design_lbls_label = tk.Label(root, text="Design labels [(str)]", font=("Helvetica", letter_size))
     design_lbls_label.place(x=step2Label.winfo_x(), y=step2Label.winfo_y() + step2Label.winfo_height())
     root.update()
     design_lbls_Txt = tk.Entry(root, width=15, font=("Helvetica", letter_size))
@@ -598,7 +607,7 @@ if __name__ == '__main__':
     root.update()
 
     # target_lbs:not important yet
-    target_lbls_Label = tk.Label(root, text="Target labels (str) not important yet", font=("Helvetica", letter_size))
+    target_lbls_Label = tk.Label(root, text="Target labels [(str)]", font=("Helvetica", letter_size))
     target_lbls_Label.place(x=step2Label.winfo_x(),
                             y=design_lbls_Txt.winfo_y() + design_lbls_Txt.winfo_height())  # Apply volt button data button
     root.update()
@@ -608,7 +617,7 @@ if __name__ == '__main__':
     root.update()
 
     # design_locs: not important yet impletnt x,y coordiantes of the features
-    design_locs_Label = tk.Label(root, text="Design locations [x,y] (str) not important yet", font=("Helvetica", letter_size))
+    design_locs_Label = tk.Label(root, text="Design locations [(float)]", font=("Helvetica", letter_size))
     design_locs_Label.place(x=step2Label.winfo_x(),
                             y=target_lbls_Txt.winfo_y() + target_lbls_Txt.winfo_height())  # Apply volt button data button
     root.update()
@@ -618,7 +627,7 @@ if __name__ == '__main__':
     root.update()
 
     # design_ids: A unique number assigned to each design_lbl (in order to perform numerical operations)
-    design_ids_Label = tk.Label(root, text="Design identity (int)", font=("Helvetica", letter_size))
+    design_ids_Label = tk.Label(root, text="Design indices [(int)]", font=("Helvetica", letter_size))
     design_ids_Label.place(x=step2Label.winfo_x(), y=design_locs_Txt.winfo_y() + design_locs_Txt.winfo_height())  # Apply volt button data button
     root.update()
     design_ids_Txt = tk.Entry(root, width=10, font=("Helvetica", letter_size))
@@ -626,7 +635,7 @@ if __name__ == '__main__':
     root.update()
 
     # target_depth_profile: (units: microns) defines the axial distance (height) of our target profile.
-    target_depth_profile_Label = tk.Label(root, text="Hight of target profile (um int)", font=('Helvetica', letter_size))
+    target_depth_profile_Label = tk.Label(root, text="Target depth microns (int)", font=('Helvetica', letter_size))
     target_depth_profile_Label.place(x=step2Label.winfo_x(),
                                      y=design_ids_Txt.winfo_y() + design_ids_Txt.winfo_height())
     root.update()
@@ -636,7 +645,7 @@ if __name__ == '__main__':
         y=target_depth_profile_Label.winfo_y())
     root.update()
     # design_spacing: not important yet.
-    design_spacing_Label = tk.Label(root, text="Design spacing (str) not important yet", font=("Helvetica", letter_size))
+    design_spacing_Label = tk.Label(root, text="Design spacing microns (int)", font=("Helvetica", letter_size))
     design_spacing_Label.place(x=step2Label.winfo_x(),
                           y=target_depth_profile_Txt.winfo_y() + target_depth_profile_Txt.winfo_height())  # Apply volt button data button
     root.update()
@@ -646,7 +655,7 @@ if __name__ == '__main__':
     root.update()
 
     # dose_lbls: A string that identifies which exposure setting (dose) this data belongs to.
-    dose_lbls_Label = tk.Label(root, text="Exposure dose setting (str)", font=("Helvetica", letter_size))
+    dose_lbls_Label = tk.Label(root, text="Dose labels [(str)]", font=("Helvetica", letter_size))
     dose_lbls_Label.place(x=step2Label.winfo_x(),
                            y=design_spacing_Txt.winfo_y() + design_spacing_Txt.winfo_height())  # Apply volt button data button
     root.update()
@@ -656,7 +665,7 @@ if __name__ == '__main__':
     root.update()
     #
     # focus_lbls: A number that identifies which exposure setting (focus) this data belongs to.
-    focus_lbls_Label = tk.Label(root, text="Exposure focus setting (int)", font=("Helvetica", letter_size))
+    focus_lbls_Label = tk.Label(root, text="Focus labels [(int)]", font=("Helvetica", letter_size))
     focus_lbls_Label.place(x=step2Label.winfo_x(),
                           y=dose_lbls_Txt.winfo_y() + dose_lbls_Txt.winfo_height())  # Apply volt button data button
     root.update()
@@ -666,7 +675,7 @@ if __name__ == '__main__':
     root.update()
 
     # fem_dxdy: not important yet.
-    fem_dxdy_Label = tk.Label(root, text="fem_dxdy (int)", font=("Helvetica", letter_size))
+    fem_dxdy_Label = tk.Label(root, text="fem_dxdy [(float)]", font=("Helvetica", letter_size))
     fem_dxdy_Label.place(x=step2Label.winfo_x(),
                          y=focus_lbls_Txt.winfo_y() + focus_lbls_Txt.winfo_height())  # Apply volt button data button
     root.update()
@@ -676,7 +685,7 @@ if __name__ == '__main__':
     root.update()
 
     # target_radius: (units: microns) defines the radial distance of our target profile.
-    target_radius_Label = tk.Label(root, text="Radial distance of target profile (um int)", font=('Helvetica', letter_size))
+    target_radius_Label = tk.Label(root, text="Target radius microns (int)", font=('Helvetica', letter_size))
     target_radius_Label.place(x=step2Label.winfo_x(), y=fem_dxdy_Txt.winfo_y() + fem_dxdy_Txt.winfo_height())
     root.update()
     target_radius_Txt = tk.Entry(root, width=10, font=("Helvetica", letter_size))
@@ -691,10 +700,24 @@ if __name__ == '__main__':
     ############## Step 3 initalize the wafer ##########################
 
     step3Label = tk.Label(root, text="Step 3: Initialize the wafer", font=('Helvetica', title_size))
-    step3Label.place(x=target_radius_Label.winfo_x()+target_radius_Label.winfo_width()+10, y=10)
+    step3Label.place(x=step2Label.winfo_x()+step2Label.winfo_width()+10, y=10)
     root.update()
 
+    # target_radius: (units: microns) defines the radial distance of our target profile.
+    target_radius_Label = tk.Label(root, text="Target radius microns (int)", font=('Helvetica', letter_size))
+    target_radius_Label.place(x=step2Label.winfo_x(), y=fem_dxdy_Txt.winfo_y() + fem_dxdy_Txt.winfo_height())
+    root.update()
+    target_radius_Txt = tk.Entry(root, width=10, font=("Helvetica", letter_size))
+    target_radius_Txt.place(x=target_radius_Label.winfo_x() + target_radius_Label.winfo_width() + 20,
+                            y=target_radius_Label.winfo_y())
+    root.update()
 
+    # Initailze Features
+    initWafer = tk.Button(root, text="Initialize Features", font=('Helvetica', letter_size),
+                                    command=lambda: init_Wafer())
+    initWafer.place(x=step3Label.winfo_x(),
+                              y=step3Label.winfo_y() + step3Label.winfo_height() + 5)
+    root.update()
 
 
 
@@ -737,5 +760,5 @@ if __name__ == '__main__':
     toolbar = NavigationToolbar2Tk(canvas,root)
     toolbar.update()
     root.update()
-
+    root.
     root.mainloop()
