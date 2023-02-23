@@ -114,49 +114,49 @@ design_spacing = 5e3
 design_locs = [[0, n * design_spacing] for n in [-0.5, 0.5]]
 fem_dxdy = [10e3, 10e3]
 # print(design_locs)
-def plotFeatures(x,y):
-    plot1.plot(x, y, 'r',label='Your Feature')
-    plot1.legend()
-    plot1.grid()
-    fig.show()
-class cicleXY:
-  def __init__(self, center, radius):
-    self.center = center
-    self.radius = radius
-    self.xcir = [self.radius * np.cos(x)+self.center[0] for x in np.linspace(0, 2 * np.pi, 500)]
-    self.ycir = [self.radius * np.sin(x)+self.center[1] for x in np.linspace(0, 2 * np.pi, 500)]
-
-fig = plt.figure(figsize=(4,3.5))
-plot1 = fig.add_subplot(111)
-xCirc = [50.8*np.cos(x) for x in np.linspace(0, 2*np.pi, 500)]
-yCirc = [50.8*np.sin(x) for x in np.linspace(0, 2*np.pi, 500)]
-# plot1.set_title('Serial Data')
-plot1.plot(xCirc,yCirc)
-# plot1.set_xlabel('$mm$')
-# plot1.set_ylabel('$mm$')
-plot1.set_title('Features in mm')
-plot1.grid()
-# fig.show()
-
-for i in design_locs:
-    Features = cicleXY(i, target_radius)
-    plotFeatures(Features.xcir, Features.ycir)
-
-
-# # initialize 'designs'
-# designs = initialize_designs(base_path, design_lbls, target_lbls, design_locs, design_ids)
+# def plotFeatures(x,y):
+#     plot1.plot(x, y, 'r',label='Your Feature')
+#     plot1.legend()
+#     plot1.grid()
+#     fig.show()
+# class cicleXY:
+#   def __init__(self, center, radius):
+#     self.center = center
+#     self.radius = radius
+#     self.xcir = [self.radius * np.cos(x)+self.center[0] for x in np.linspace(0, 2 * np.pi, 500)]
+#     self.ycir = [self.radius * np.sin(x)+self.center[1] for x in np.linspace(0, 2 * np.pi, 500)]
 #
-# # 'designs' on a wafer form 'features'
-# features = initialize_design_features(designs,
-#                                       design_spacing,
-#                                       dose_lbls,
-#                                       focus_lbls,
-#                                       process_flow,
-#                                       fem_dxdy,
-#                                       target_radius=target_radius,
-#                                       )
+# fig = plt.figure(figsize=(4,3.5))
+# plot1 = fig.add_subplot(111)
+# xCirc = [50.8*np.cos(x) for x in np.linspace(0, 2*np.pi, 500)]
+# yCirc = [50.8*np.sin(x) for x in np.linspace(0, 2*np.pi, 500)]
+# # plot1.set_title('Serial Data')
+# plot1.plot(xCirc,yCirc)
+# # plot1.set_xlabel('$mm$')
+# # plot1.set_ylabel('$mm$')
+# plot1.set_title('Features in mm')
+# plot1.grid()
+# # fig.show()
+#
+# for i in design_locs:
+#     Features = cicleXY(i, target_radius)
+#     plotFeatures(Features.xcir, Features.ycir)
 
-# """
+
+# initialize 'designs'
+designs = initialize_designs(base_path, design_lbls, target_lbls, design_locs, design_ids)
+
+# 'designs' on a wafer form 'features'
+features = initialize_design_features(designs,
+                                      design_spacing,
+                                      dose_lbls,
+                                      focus_lbls,
+                                      process_flow,
+                                      fem_dxdy,
+                                      target_radius=target_radius,
+                                      )
+
+"""
 # 3. Initialize the 'Wafer'
 #
 # Now that we have parsed our 'process flow' and initialized our 'designs' as 'features' on a wafer, we create an instance
@@ -175,82 +175,82 @@ for i in design_locs:
 #     GraycartWafer: create an instance of GraycartWafer
 #
 # """
-#
-# # inputs
-# profilometry_tool = 'KLATencor-P7'
-#
-# # 4. 'measurements' record the effect of 'processes' on 'features'
-# measurement_methods = io.read_measurement_methods(profilometry=profilometry_tool)
-#
-# # 5. the 'wafer' structures all of this data as a historical record of 'cause' and 'effect'
-# wfr = GraycartWafer(wid=wid,
-#                     path=base_path,
-#                     path_results=path_results,
-#                     designs=designs,
-#                     features=features,
-#                     process_flow=process_flow,
-#                     processes=None,
-#                     measurement_methods=measurement_methods,
-#                     )
-#
-# """
-# 4. Read, process, and evaluate the 'measurement_methods' data.
-#
-#     # the following inputs modify (turn on or off) functions to process profilometry data.
-#     evaluate_signal_processing: (True or False) Optionally, plot various signal processing methods to smooth profilometry data.
-#     perform_rolling_on: (True or False) Optionally, perform a rolling operation to smooth data; [[3, 'b1', 25]]
-#
-#     # the following parameters are passed into smoothing and peak_finding algorithms:
-#     lambda_peak_rel_height: function to modify the scipy.find_peaks function
-#     peak_rel_height: if 'lambda_peak_rel_height' is defined, then this variable isn't used.
-#     downsample: downsample the data to reduce computation.
-#     width_rel_radius: radial distance, beyond the target radius, to evaluate.
-#     prominence: the relative height of a peak compared to adjacent peaks.
-#     fit_func: function that is fit to the profilometry profile to find its peak (center)
-#
-#     # the following inputs modify plotting functions:
-#     plot_width_rel_target_radius: plot radius = target_radius * plot_width_rel_target_radius
-#     save_profilometry_processing_figures = True
-#     save_merged_profilometry_data = True
-#
-# Functions:
-#     evaluate_process_profilometry: iterate through each process and each feature and evaluate profilometry data.
-#     merge_processes_profilometry: merge all of the profilometry data into a single database.
-#     merge_exposure_doses_to_process_depths: merge exposure data (dose, focus) with profilometry data (r, z)
-# """
-#
-# # inputs
-# evaluate_signal_processing = False
-# lambda_peak_rel_height = lambda x: min([0.95 + x / 100, 0.9875])
-# perform_rolling_on = False  # [[3, 'b1', 25]]
-# plot_width_rel_target_radius = 1.2
-# peak_rel_height = 0.975
-# downsample = 5
-# width_rel_radius = 0.01
-# fit_func = 'parabola'
-# prominence = 1
-# save_profilometry_processing_figures = True
-# save_merged_profilometry_data = True
-#
-# # functions
-# wfr.evaluate_process_profilometry(plot_fits=save_profilometry_processing_figures,
-#                                   perform_rolling_on=perform_rolling_on,
-#                                   evaluate_signal_processing=evaluate_signal_processing,
-#                                   plot_width_rel_target=plot_width_rel_target_radius,
-#                                   peak_rel_height=peak_rel_height,
-#                                   downsample=downsample,
-#                                   width_rel_radius=width_rel_radius,
-#                                   fit_func=fit_func,
-#                                   prominence=prominence,
-#                                   )
-#
-# wfr.merge_processes_profilometry(export=save_merged_profilometry_data)
-#
-#
-# # ----------------------------------------------------------------------------------------------------------------------
-# # END PRIMARY DATA PROCESSING FUNCTIONS
-# # ----------------------------------------------------------------------------------------------------------------------
-#
+
+# inputs
+profilometry_tool = 'KLATencor-P7'
+
+# 4. 'measurements' record the effect of 'processes' on 'features'
+measurement_methods = io.read_measurement_methods(profilometry=profilometry_tool)
+print(measurement_methods)
+# 5. the 'wafer' structures all of this data as a historical record of 'cause' and 'effect'
+wfr = GraycartWafer(wid=wid,
+                    path=base_path,
+                    path_results=path_results,
+                    designs=designs,
+                    features=features,
+                    process_flow=process_flow,
+                    processes=None,
+                    measurement_methods=measurement_methods,
+                    )
+print('step 3 finished')
+"""
+4. Read, process, and evaluate the 'measurement_methods' data.
+
+    # the following inputs modify (turn on or off) functions to process profilometry data.
+    evaluate_signal_processing: (True or False) Optionally, plot various signal processing methods to smooth profilometry data.
+    perform_rolling_on: (True or False) Optionally, perform a rolling operation to smooth data; [[3, 'b1', 25]]
+
+    # the following parameters are passed into smoothing and peak_finding algorithms:
+    lambda_peak_rel_height: function to modify the scipy.find_peaks function
+    peak_rel_height: if 'lambda_peak_rel_height' is defined, then this variable isn't used.
+    downsample: downsample the data to reduce computation.
+    width_rel_radius: radial distance, beyond the target radius, to evaluate.
+    prominence: the relative height of a peak compared to adjacent peaks.
+    fit_func: function that is fit to the profilometry profile to find its peak (center)
+
+    # the following inputs modify plotting functions:
+    plot_width_rel_target_radius: plot radius = target_radius * plot_width_rel_target_radius
+    save_profilometry_processing_figures = True
+    save_merged_profilometry_data = True
+
+Functions:
+    evaluate_process_profilometry: iterate through each process and each feature and evaluate profilometry data.
+    merge_processes_profilometry: merge all of the profilometry data into a single database.
+    merge_exposure_doses_to_process_depths: merge exposure data (dose, focus) with profilometry data (r, z)
+"""
+
+# inputs
+evaluate_signal_processing = False
+lambda_peak_rel_height = lambda x: min([0.95 + x / 100, 0.9875])
+perform_rolling_on = False  # [[3, 'b1', 25]]
+plot_width_rel_target_radius = 1.2
+peak_rel_height = 0.975
+downsample = 5
+width_rel_radius = 0.01
+fit_func = 'parabola'
+prominence = 1
+save_profilometry_processing_figures = True
+save_merged_profilometry_data = True
+
+# functions
+wfr.evaluate_process_profilometry(plot_fits=save_profilometry_processing_figures,
+                                  perform_rolling_on=perform_rolling_on,
+                                  evaluate_signal_processing=evaluate_signal_processing,
+                                  plot_width_rel_target=plot_width_rel_target_radius,
+                                  peak_rel_height=peak_rel_height,
+                                  downsample=downsample,
+                                  width_rel_radius=width_rel_radius,
+                                  fit_func=fit_func,
+                                  prominence=prominence,
+                                  )
+
+wfr.merge_processes_profilometry(export=save_merged_profilometry_data)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# END PRIMARY DATA PROCESSING FUNCTIONS
+# ----------------------------------------------------------------------------------------------------------------------
+
 # """
 # At this point, all of the data has been parsed and structured. The following functions can be optionally called to
 # interpret the data.
@@ -283,7 +283,7 @@ for i in design_locs:
 #                                       save_fig=True)
 #
 # # ---
-#
+
 # """
 # 'compare_target_to_feature_evolution' plots your profilometry data (i.e., 'features') on top of your target profile for
 # each step in your process flow. The variables 'px' and 'py' are which coordinates you want to plot.
