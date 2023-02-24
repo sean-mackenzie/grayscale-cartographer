@@ -239,7 +239,7 @@ class GraycartProcess(object):
                 # add z-offset for photoresist thickness
                 df = pk_details['df']
                 df['z_surf'] = df['z'] + np.max([thickness_pr, 0])
-                print("Step {}, {} for {} s: PR thickness = {}".format(self.step, self.recipe, self.time, thickness_pr))
+                print("Step {}, {} for {} s: PR thickness = {}".format(self.step, self.recipe, self.time, thickness_pr)) ## print in log bock
                 # df['z_surf'] = df['z_surf'].where(df['z_surf'] > 0, 0)
 
                 pf = {pk_lbl: ProcessFeature(graycart_wafer_feature=self.features[pk_lbl],

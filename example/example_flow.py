@@ -9,8 +9,6 @@
 #         b[i]=float(b[i])
 # print(b)
 
-
-
 from os.path import join
 import tkinter as tk #tkinter for GUI
 from graycart.GraycartWafer import GraycartWafer
@@ -109,7 +107,7 @@ target_radius = 1920
 target_depth_profile = 50
 
 # not important
-target_lbls = [None, None]
+target_lbls = [None, None] # string
 design_spacing = 5e3
 design_locs = [[0, n * design_spacing] for n in [-0.5, 0.5]]
 fem_dxdy = [10e3, 10e3]
@@ -251,128 +249,128 @@ wfr.merge_processes_profilometry(export=save_merged_profilometry_data)
 # END PRIMARY DATA PROCESSING FUNCTIONS
 # ----------------------------------------------------------------------------------------------------------------------
 
-# """
-# At this point, all of the data has been parsed and structured. The following functions can be optionally called to
-# interpret the data.
-# """
-#
-# # ---
-#
-# """
-# 'plot_exposure_profile': plot figure showing your design profile.
-# """
-# features_of_interest = ['a1_erf3', 'b1_erf3', 'a1_Lr', 'b1_Lr']
-# for foi in features_of_interest:
-#     gpf = wfr.features[foi]
-#     plotting.plot_exposure_profile(gcf=gpf, path_save=join(wfr.path_results, 'figs'), save_type=save_type)
-#
-# # ---
-#
-# """
-# 'backout_process_to_achieve_target' starts with your 'target_profile' and reverse engineers what processes you should
-# run and how you should pattern your photoresist.
-# """
-# thickness_PR = 7.5  # photoresist thickness, this variable could be interpreted from process_flow or inputted here.
-# thickness_PR_budget = 1.5  # the thickness of photoresist protecting your wafer outside of your target profile.
-# r_target = 20  # the radial distance (microns) over which the mean peak height (depth) is calculated.
-# wfr.backout_process_to_achieve_target(target_radius=target_radius,
-#                                       target_depth=target_depth_profile,
-#                                       thickness_PR=thickness_PR,
-#                                       thickness_PR_budget=thickness_PR_budget,
-#                                       r_target=r_target,
-#                                       save_fig=True)
-#
-# # ---
+"""
+At this point, all of the data has been parsed and structured. The following functions can be optionally called to
+interpret the data.
+"""
 
-# """
-# 'compare_target_to_feature_evolution' plots your profilometry data (i.e., 'features') on top of your target profile for
-# each step in your process flow. The variables 'px' and 'py' are which coordinates you want to plot.
-# """
-# wfr.compare_target_to_feature_evolution(px='r', py='z', save_fig=True)
-#
-# # ---
-#
-# """
-# 'characterize_exposure_dose_depth_relationship' calculates the relationship between exposure intensity (mJ) and
-# photoresist depth (microns). 'z_standoff_measure
-# """
-# wfr.characterize_exposure_dose_depth_relationship(plot_figs=True,
-#                                                   save_type=save_type,
-#                                                   )
-# wfr.merge_exposure_doses_to_process_depths(export=True)
-#
-# # ---
-#
-# """
-# This function can only be run after running 'characterize_exposure_dose_depth_relationship' first.
-#
-# 'correct_grayscale_design_profile' redraws your grayscale map (r-coordinate and layer), according to the characterized
-# exposure_dose-to-depth relationship, to achieve your target profile.
-# """
-# z_standoff_design = 1
-# wfr.correct_grayscale_design_profile(z_standoff=z_standoff_design,
-#                                      plot_figs=True,
-#                                      save_type=save_type,
-#                                      )
-#
-# # ---
-#
-# """
-# 'plot_all_exposure_dose_to_depth': plot figure showing exposure dose to depth relationship. 'step_develop' indicates
-# which step in the process flow is the 'Develop' step.. this variable should be deprecated.
-# """
-# step_develop = 3
-# wfr.plot_all_exposure_dose_to_depth(step=step_develop)
-#
-# # ---
-#
-# """
-# 'compare_exposure_functions': plot figures comparing exposure functions.
-# """
-# wfr.compare_exposure_functions()
-#
-# # ---
-#
-# """
-# 'plot_feature_evolution': plot features at each process.
-# """
-# wfr.plot_feature_evolution(px='r', py='z', save_fig=True)
-#
-# # ---
-#
-# """
-# 'compare_target_to_feature_evolution': plot figures comparing target profile to features at each process.
-# """
-# wfr.compare_target_to_feature_evolution(px='r', py='z', save_fig=True)
-#
-# # ---
-#
-# """
-# 'plot_overlay_feature_and_exposure_profiles': plot figure showing your design profile and feature profile for a
-# specified step. Here, I define 'step' to be the last step in the process flow, although it can be any step.
-#
-# 'did' is short for Design ID.
-# """
-# step = max(wfr.list_steps)
-# for did in wfr.dids:
-#     plotting.plot_overlay_feature_and_exposure_profiles(gcw=wfr, step=step, did=did,
-#                                                         path_save=join(wfr.path_results, 'figs'),
-#                                                         save_type=save_type,
-#                                                         )
-#
-# # ---
-#
-# """
-# 'grade_profile_accuracy': Grade the accuracy of your feature profile against your target profile. *Note, this function
-# doesn't really give any meaningful information right now. It needs to be upgraded.
-# """
-# wfr.grade_profile_accuracy(step=max(wfr.list_steps), target_radius=target_radius, target_depth=target_depth_profile)
-#
-#
-# # ---
-#
-# # ----------------------------------------------------------------------------------------------------------------------
-# # END DATA ANALYSIS FUNCTIONS
-# # ----------------------------------------------------------------------------------------------------------------------
-#
-# print("example_flow.py completed without errors.")
+# ---
+
+"""
+'plot_exposure_profile': plot figure showing your design profile.
+"""
+features_of_interest = ['a1_erf3', 'b1_erf3', 'a1_Lr', 'b1_Lr']
+for foi in features_of_interest:
+    gpf = wfr.features[foi]
+    plotting.plot_exposure_profile(gcf=gpf, path_save=join(wfr.path_results, 'figs'), save_type=save_type)
+
+# ---
+
+"""
+'backout_process_to_achieve_target' starts with your 'target_profile' and reverse engineers what processes you should
+run and how you should pattern your photoresist.
+"""
+thickness_PR = 7.5  # photoresist thickness, this variable could be interpreted from process_flow or inputted here.
+thickness_PR_budget = 1.5  # the thickness of photoresist protecting your wafer outside of your target profile.
+r_target = 20  # the radial distance (microns) over which the mean peak height (depth) is calculated.
+wfr.backout_process_to_achieve_target(target_radius=target_radius,
+                                      target_depth=target_depth_profile,
+                                      thickness_PR=thickness_PR,
+                                      thickness_PR_budget=thickness_PR_budget,
+                                      r_target=r_target,
+                                      save_fig=True)
+
+# ---
+
+"""
+'compare_target_to_feature_evolution' plots your profilometry data (i.e., 'features') on top of your target profile for
+each step in your process flow. The variables 'px' and 'py' are which coordinates you want to plot.
+"""
+wfr.compare_target_to_feature_evolution(px='r', py='z', save_fig=True)
+
+# ---
+
+"""
+'characterize_exposure_dose_depth_relationship' calculates the relationship between exposure intensity (mJ) and
+photoresist depth (microns). 'z_standoff_measure
+"""
+wfr.characterize_exposure_dose_depth_relationship(plot_figs=True,
+                                                  save_type=save_type,
+                                                  )
+wfr.merge_exposure_doses_to_process_depths(export=True)
+
+# ---
+
+"""
+This function can only be run after running 'characterize_exposure_dose_depth_relationship' first.
+
+'correct_grayscale_design_profile' redraws your grayscale map (r-coordinate and layer), according to the characterized
+exposure_dose-to-depth relationship, to achieve your target profile.
+"""
+z_standoff_design = 1
+wfr.correct_grayscale_design_profile(z_standoff=z_standoff_design,
+                                     plot_figs=True,
+                                     save_type=save_type,
+                                     )
+
+# ---
+
+"""
+'plot_all_exposure_dose_to_depth': plot figure showing exposure dose to depth relationship. 'step_develop' indicates
+which step in the process flow is the 'Develop' step.. this variable should be deprecated.
+"""
+step_develop = 3
+wfr.plot_all_exposure_dose_to_depth(step=step_develop)
+
+# ---
+
+"""
+'compare_exposure_functions': plot figures comparing exposure functions.
+"""
+wfr.compare_exposure_functions()
+
+# ---
+
+"""
+'plot_feature_evolution': plot features at each process.
+"""
+wfr.plot_feature_evolution(px='r', py='z', save_fig=True)
+
+# ---
+
+"""
+'compare_target_to_feature_evolution': plot figures comparing target profile to features at each process.
+"""
+wfr.compare_target_to_feature_evolution(px='r', py='z', save_fig=True)
+
+# ---
+
+"""
+'plot_overlay_feature_and_exposure_profiles': plot figure showing your design profile and feature profile for a
+specified step. Here, I define 'step' to be the last step in the process flow, although it can be any step.
+
+'did' is short for Design ID.
+"""
+step = max(wfr.list_steps)
+for did in wfr.dids:
+    plotting.plot_overlay_feature_and_exposure_profiles(gcw=wfr, step=step, did=did,
+                                                        path_save=join(wfr.path_results, 'figs'),
+                                                        save_type=save_type,
+                                                        )
+
+# ---
+
+"""
+'grade_profile_accuracy': Grade the accuracy of your feature profile against your target profile. *Note, this function
+doesn't really give any meaningful information right now. It needs to be upgraded.
+"""
+wfr.grade_profile_accuracy(step=max(wfr.list_steps), target_radius=target_radius, target_depth=target_depth_profile)
+
+
+# ---
+
+# ----------------------------------------------------------------------------------------------------------------------
+# END DATA ANALYSIS FUNCTIONS
+# ----------------------------------------------------------------------------------------------------------------------
+
+print("example_flow.py completed without errors.")

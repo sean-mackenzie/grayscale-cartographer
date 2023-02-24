@@ -11,7 +11,7 @@ import re
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
-
+from GUI_step3_popup import slect_profilometry,wafer_init
 # ----------------------------------------------------------------------------------------------------------------------
 # INPUTS
 
@@ -333,231 +333,15 @@ Functions:
 # inputs
 profilometry_tool = 'KLATencor-P7'
 
-
-measurement_methods = False
-measurement_methods_err =''
-def slect_profilometry(profilometry_tool):
-    profilometry_tool = profilometry_tool_Txt.get()
-    profilo_window = tk.Toplevel()
-    profilo_window.title('Select specifications of '+ profilometry_tool)
-    profilo_window.config(background='light green')
-    profilo_window.geometry('900x250')  # set the window size
-
-    step1Label = tk.Label(profilo_window, text="Specify parameters of "+profilometry_tool, font=('Helvetica', title_size))
-    step1Label.place(x=10, y=10)
-    profilo_window.update()
-    # startSerial = tk.Button(root, image=off, font= ('calbiri',12), command= lambda: comActive())
-    # startSerial.place(x= serialLabel.winfo_x()+serialLabel.winfo_width()+20, y=10)
-    # File type to read
-    filetype_read_Label = tk.Label(profilo_window, text="Filetype read (str)", font=("Helvetica", letter_size))
-    filetype_read_Label.place(x=10, y=step1Label.winfo_y() + step1Label.winfo_height())
-    profilo_window.update()
-    filetype_read_Txt = tk.Entry(profilo_window, width=15, font=("Helvetica", letter_size))
-    filetype_read_Txt.place(x=filetype_read_Label.winfo_x() + filetype_read_Label.winfo_width() + 5, y=filetype_read_Label.winfo_y())
-    profilo_window.update()
-
-    # x units
-    x_units_read_Label = tk.Label(profilo_window, text="X units read (float)", font=("Helvetica", letter_size))
-    x_units_read_Label.place(x=filetype_read_Txt.winfo_x() + filetype_read_Txt.winfo_width() + 10, y=filetype_read_Label.winfo_y())  # Apply volt button data button
-    profilo_window.update()
-    x_units_read_Txt = tk.Entry(profilo_window, width=10, font=("Helvetica", letter_size))
-    x_units_read_Txt.place(x=x_units_read_Label.winfo_x() + x_units_read_Label.winfo_width() + 5, y=filetype_read_Label.winfo_y())
-    profilo_window.update()
-
-    # y units
-    y_units_read_Label = tk.Label(profilo_window, text="Y units read (float)", font=('Helvetica', letter_size))
-    y_units_read_Label.place(x=x_units_read_Txt.winfo_x() + x_units_read_Txt.winfo_width() + 5, y=filetype_read_Label.winfo_y())
-    profilo_window.update()
-    y_units_read_Txt = tk.Entry(profilo_window, width=10, font=("Helvetica", letter_size))
-    y_units_read_Txt.place(x=y_units_read_Label.winfo_x() + y_units_read_Label.winfo_width() + 5, y=filetype_read_Label.winfo_y())
-    profilo_window.update()
-
-    #file name write
-    filetype_write_Label = tk.Label(profilo_window, text="Filetype write (str)", font=("Helvetica", letter_size))
-    filetype_write_Label.place(x=10, y=filetype_read_Label.winfo_y()+filetype_read_Label.winfo_height()+5)
-    profilo_window.update()
-    filetype_write_Txt = tk.Entry(profilo_window, width=15, font=("Helvetica", letter_size))
-    filetype_write_Txt.place(x=filetype_read_Label.winfo_x() + filetype_read_Label.winfo_width() + 5,
-                            y=filetype_write_Label.winfo_y())
-    profilo_window.update()
-
-    # x units
-    x_units_write_Label = tk.Label(profilo_window, text="X units read (float)", font=("Helvetica", letter_size))
-    x_units_write_Label.place(x=filetype_read_Txt.winfo_x() + filetype_read_Txt.winfo_width() + 10,
-                             y=filetype_read_Label.winfo_y()+filetype_read_Label.winfo_height()+5)  # Apply volt button data button
-    profilo_window.update()
-    x_units_write_Txt = tk.Entry(profilo_window, width=10, font=("Helvetica", letter_size))
-    x_units_write_Txt.place(x=x_units_read_Label.winfo_x() + x_units_read_Label.winfo_width() + 5,
-                           y=filetype_write_Txt.winfo_y()+5)
-    profilo_window.update()
-
-    # y units
-    y_units_write_Label = tk.Label(profilo_window, text="Y units read (float)", font=('Helvetica', letter_size))
-    y_units_write_Label.place(x=x_units_read_Txt.winfo_x() + x_units_read_Txt.winfo_width() + 5,
-                             y=filetype_write_Txt.winfo_y()+5)
-    profilo_window.update()
-    y_units_write_Txt = tk.Entry(profilo_window, width=10, font=("Helvetica", letter_size))
-    y_units_write_Txt.place(x=y_units_read_Label.winfo_x() + y_units_read_Label.winfo_width() + 5,
-                           y=filetype_write_Txt.winfo_y()+5)
-    profilo_window.update()
-    ###### Data etch monitor ################
-    headr_etch_moitor_Label = tk.Label(profilo_window, text="Data Etch monitor: Header (str)", font=("Helvetica", letter_size))
-    headr_etch_moitor_Label.place(x=10, y=y_units_write_Label.winfo_y() + y_units_write_Label.winfo_height() + 5)
-    profilo_window.update()
-    header_etch_moitor_Txt = tk.Entry(profilo_window, width=15, font=("Helvetica", letter_size))
-    header_etch_moitor_Txt.place(x=headr_etch_moitor_Label.winfo_x() + headr_etch_moitor_Label.winfo_width() + 5,
-                                y=headr_etch_moitor_Label.winfo_y())
-    profilo_window.update()
-
-    # File name type read ethcer
-    filetype_read_etcher_Label = tk.Label(profilo_window, text="File type read (float)", font=("Helvetica", letter_size))
-    filetype_read_etcher_Label.place(x=header_etch_moitor_Txt.winfo_x() + header_etch_moitor_Txt.winfo_width() + 10,
-                              y=headr_etch_moitor_Label.winfo_y() )  # Apply volt button data button
-    profilo_window.update()
-    filetype_read_etcher_Txt = tk.Entry(profilo_window, width=10, font=("Helvetica", letter_size))
-    filetype_read_etcher_Txt.place(x=filetype_read_etcher_Label.winfo_x() + filetype_read_etcher_Label.winfo_width() + 5,
-                            y=headr_etch_moitor_Label.winfo_y() )
-    profilo_window.update()
-
-    # File name type write ethcer
-    filetype_write_etcher_Label = tk.Label(profilo_window, text="File type write (float)", font=('Helvetica', letter_size))
-    filetype_write_etcher_Label.place(x=filetype_read_etcher_Txt.winfo_x() + filetype_read_etcher_Txt.winfo_width() + 5,
-                              y=headr_etch_moitor_Label.winfo_y() )
-    profilo_window.update()
-    filetype_write_etcher_Txt = tk.Entry(profilo_window, width=10, font=("Helvetica", letter_size))
-    filetype_write_etcher_Txt.place(x=filetype_write_etcher_Label.winfo_x() + filetype_write_etcher_Label.winfo_width() + 5,
-                            y=headr_etch_moitor_Label.winfo_y() )
-    profilo_window.update()
-    ###### Data optical ################
-    headr_optical_Label = tk.Label(profilo_window, text="Data Optical: Header (str)", font=("Helvetica", letter_size))
-    headr_optical_Label.place(x=10, y=filetype_write_etcher_Txt.winfo_y() + filetype_write_etcher_Txt.winfo_height() + 5)
-    profilo_window.update()
-    headr_optical_Txt = tk.Entry(profilo_window, width=15, font=("Helvetica", letter_size))
-    headr_optical_Txt.place(x=headr_optical_Label.winfo_x() + headr_optical_Label.winfo_width() + 5,
-                                y=headr_optical_Label.winfo_y())
-    profilo_window.update()
-
-    # File name type read optical
-    filetype_read_optical_Label = tk.Label(profilo_window, text="File type read (float)", font=("Helvetica", letter_size))
-    filetype_read_optical_Label.place(x=headr_optical_Txt.winfo_x() + headr_optical_Txt.winfo_width() + 10,
-                              y=headr_optical_Label.winfo_y() )  # Apply volt button data button
-    profilo_window.update()
-    filetype_read_optical_Txt = tk.Entry(profilo_window, width=10, font=("Helvetica", letter_size))
-    filetype_read_optical_Txt.place(x=filetype_read_optical_Label.winfo_x() + filetype_read_optical_Label.winfo_width() + 5,
-                            y=headr_optical_Label.winfo_y() )
-    profilo_window.update()
-
-    # File name type write optical
-    filetype_write_optical_Label = tk.Label(profilo_window, text="File type write (float)", font=('Helvetica', letter_size))
-    filetype_write_optical_Label.place(x=filetype_read_optical_Txt.winfo_x() + filetype_read_optical_Txt.winfo_width() + 5,
-                              y=headr_optical_Label.winfo_y() )
-    profilo_window.update()
-    filetype_write_optical_Txt = tk.Entry(profilo_window, width=10, font=("Helvetica", letter_size))
-    filetype_write_optical_Txt.place(x=filetype_write_optical_Label.winfo_x() + filetype_write_optical_Label.winfo_width() + 5,
-                            y=headr_optical_Label.winfo_y() )
-    profilo_window.update()
-
-    ###### Data miscellaneous ################
-    headr_misc_Label = tk.Label(profilo_window, text="Data Miscellaneous: Header (str)", font=("Helvetica", letter_size))
-    headr_misc_Label.place(x=10,
-                              y=filetype_read_optical_Txt.winfo_y() + filetype_read_optical_Txt.winfo_height() + 5)
-    profilo_window.update()
-    headr_misc_Txt = tk.Entry(profilo_window, width=15, font=("Helvetica", letter_size))
-    headr_misc_Txt.place(x=headr_misc_Label.winfo_x() + headr_misc_Label.winfo_width() + 5,
-                            y=headr_misc_Label.winfo_y())
-    profilo_window.update()
-
-    # File name type read miscellaneous
-    filetype_read_misc_Label = tk.Label(profilo_window, text="File type read (float)", font=("Helvetica", letter_size))
-    filetype_read_misc_Label.place(x=headr_misc_Txt.winfo_x() + headr_misc_Txt.winfo_width() + 10,
-                                 y=headr_misc_Label.winfo_y())  # Apply volt button data button
-    profilo_window.update()
-    filetype_read_misc_Txt = tk.Entry(profilo_window, width=10, font=("Helvetica", letter_size))
-    filetype_read_misc_Txt.place(x=filetype_read_misc_Label.winfo_x() + filetype_read_misc_Label.winfo_width() + 5,
-                               y=headr_misc_Label.winfo_y())
-    profilo_window.update()
-
-    # File name type write miscellaneous
-    filetype_write_misc_Label = tk.Label(profilo_window, text="File type write (float)", font=('Helvetica', letter_size))
-    filetype_write_misc_Label.place(x=filetype_read_misc_Txt.winfo_x() + filetype_read_misc_Txt.winfo_width() + 5,
-                                 y=headr_misc_Label.winfo_y())
-    profilo_window.update()
-    filetype_write_misc_Txt = tk.Entry(profilo_window, width=10, font=("Helvetica", letter_size))
-    filetype_write_misc_Txt.place(x=filetype_write_misc_Label.winfo_x() + filetype_write_misc_Label.winfo_width() + 5,
-                               y=headr_misc_Label.winfo_y())
-    profilo_window.update()
-    def quit():
-        global measurement_methods
-        global measurement_methods_err
-        ### getting the data and convert intot the talbe that we want to have
-        filetype_read = filetype_read_Txt.get()
-        x_units_read = x_units_read_Txt.get()
-        x_units_read_err = ''
-        if x_units_read.replace('.', '', 1).replace('e', '', 1).replace('-', '', 1).isdigit():
-            x_units_read = float(x_units_read)
-        else:
-            x_units_read_err = x_units_read + ' is not a float'
-        y_units_read = y_units_read_Txt.get()
-        y_units_read_err = ''
-        if y_units_read.replace('.', '', 1).replace('e', '', 1).replace('-', '', 1).isdigit():
-            y_units_read = float(y_units_read)
-        else:
-            y_units_read_err = y_units_read + ' is not a float'
-        filetype_write = filetype_write_Txt.get()
-        x_units_write = x_units_read_Txt.get()
-        x_units_write_err = ''
-        if x_units_write.replace('.', '', 1).replace('e', '', 1).replace('-', '', 1).isdigit():
-            x_units_write = float(x_units_write)
-        else:
-            x_units_write_err = x_units_write + ' is not a float'
-        y_units_write = y_units_write_Txt.get()
-        y_units_write_err = ''
-        if y_units_write.replace('.', '', 1).replace('e', '', 1).replace('-', '', 1).isdigit():
-            y_units_write = float(y_units_write)
-        else:
-            y_units_write_err = y_units_read + ' is not a float'
-
-        data_profile = {'header': profilometry_tool,
-                        'filetype_read': '.' + filetype_read, 'x_units_read': x_units_read,
-                        'y_units_read': y_units_read,
-                        'filetype_write': '.' + filetype_write, 'x_units_write': x_units_write,
-                        'y_units_write': y_units_write,
-                        }
-        header_etch_moitor = header_etch_moitor_Txt.get()
-        filetype_read_etcher = filetype_read_etcher_Txt.get()
-        filetype_write_etcher = filetype_write_etcher_Txt.get()
-        data_etch_monitor = {'header': header_etch_moitor, 'filetype_read': '.' + filetype_read_etcher,
-                             'filetype_write': '.' + filetype_write_etcher}
-
-        headr_optical = headr_optical_Txt.get()
-        filetype_read_optical = filetype_read_optical_Txt.get()
-        filetype_write_optical = filetype_write_optical_Txt.get()
-        data_optical = {'header': headr_optical, 'filetype_read': '.' + filetype_read_optical,
-                        'filetype_write': '.' + filetype_write_optical}
-        headr_misc = headr_misc_Txt.get()
-        filetype_read_misc = filetype_read_misc_Txt.get()
-        filetype_write_misc = filetype_write_misc_Txt.get()
-        data_misc = {'header': headr_misc, 'filetype_read': '.' + filetype_read_misc,
-                     'filetype_write': '.' + filetype_write_misc}
-        measurement_methods = {'Profilometry': data_profile,
-                               'Etch Monitor': data_etch_monitor,
-                               'Optical': data_optical,
-                               'Misc': data_misc,
-                               }
-        measurement_methods_err = {'x_units_read_err': x_units_read_err, 'y_units_read_err': y_units_read_err,
-                                   'x_units_write_err': x_units_write_err, 'y_units_write_err': y_units_write_err}
-        profilo_window.destroy()
-    # Read processflow buton lauches the functionio.read_processflow
-    kill = tk.Button(profilo_window, text="Set measurements methods", font=('Helvetica', 8), command=lambda: quit())
-    kill.place(x=10, y=headr_misc_Label.winfo_y() + headr_misc_Label.winfo_height() + 5)
-    profilo_window.update()
-
+wafer_step3=wafer_init(measurement_methods=False,measurement_methods_err='')
 wfr = False
 def init_Wafer():
     # 4. 'measurements' record the effect of 'processes' on 'features'
-    # measurement_methods = io.read_measurement_methods(profilometry=profilometry_tool)
+    measurement_methods = wafer_step3.measurement_methods
+    print(measurement_methods)
+    measurement_methods_err = wafer_step3.measurement_methods_err
     global wfr
-    if features==False:
+    if features!=False:
         try:
             # 5. the 'wafer' structures all of this data as a historical record of 'cause' and 'effect'
             wfr = GraycartWafer(wid=wid,
@@ -578,15 +362,23 @@ def init_Wafer():
                           + 'The process flow given at step 1: ' + '\n'
                           + 'The designs and features given at step 2: ' + '\n'
                           + 'Design indices ' + design_ids_Txt.get() + '\n'
-                          + 'Measurments methods: ' + str(measurement_methods)+ '\n'
+                          + 'Profilometry: ' +str(measurement_methods['Profilometry'])+ '\n'
+                          + 'Etch monitor: ' +str(measurement_methods['Etch Monitor'])+'\n'
+                          + 'Optical: ' +str(measurement_methods['Optical'])+ '\n'
+                          + 'Miscellaneous: ' +str(measurement_methods['Misc'])+ '\n'
                           )
         except:
             wfr = False
             Output.delete("1.0", "end")
             Output.insert("1.0", "Step 3: Wafer initalization errors:" + '\n'
                           + "You scrwed up" + '\n'
-                          + 'Measurments methods err:- ' + str(measurement_methods) + '\n'
+                          + 'Profilometry err:- ' +str(measurement_methods_err)+ '\n'
+                          + 'Etch monitor:- ' +str(measurement_methods['Etch Monitor'])+'\n'
+                          + 'Optical:- ' +str(measurement_methods['Optical'])+ '\n'
+                          + 'Miscellaneous:- ' +str(measurement_methods['Misc'])+ '\n'
                           )
+        print(measurement_methods)
+        print(str(measurement_methods['Misc']))
     else:
         wfr = False
         Output.delete("1.0", "end")
@@ -685,7 +477,7 @@ def eval_process():
     global width_rel_radius
     width_rel_radius_err=''
     global prominence
-    prominence=''
+    prominence_err=''
     global fit_func
     fit_func_err=''
     global plot_width_rel_target_radius
@@ -721,7 +513,7 @@ def eval_process():
     else:
         plot_width_rel_target_radius_err = plot_width_rel_target_radius + ' is not convertable to float'
 
-    if wfr==False:
+    if wfr!=False:
         try:
             wfr.evaluate_process_profilometry(plot_fits=save_profilometry_processing_figures,
                                               perform_rolling_on=perform_rolling_on,
@@ -764,50 +556,101 @@ def eval_process():
                       )
 
 
-# # ----------------------------------------------------------------------------------------------------------------------
-# # END PRIMARY DATA PROCESSING FUNCTIONS
-# # ----------------------------------------------------------------------------------------------------------------------
-#
-# """
-# At this point, all of the data has been parsed and structured. The following functions can be optionally called to
-# interpret the data.
-# """
-#
-# # ---
-#
-# """
-# 'plot_exposure_profile': plot figure showing your design profile.
-# """
-# features_of_interest = ['a1_erf3', 'b1_erf3', 'a1_Lr', 'b1_Lr']
-# for foi in features_of_interest:
-#     gpf = wfr.features[foi]
-#     plotting.plot_exposure_profile(gcf=gpf, path_save=join(wfr.path_results, 'figs'), save_type=save_type)
-#
-# # ---
-#
-# """
-# 'backout_process_to_achieve_target' starts with your 'target_profile' and reverse engineers what processes you should
-# run and how you should pattern your photoresist.
-# """
-# thickness_PR = 7.5  # photoresist thickness, this variable could be interpreted from process_flow or inputted here.
-# thickness_PR_budget = 1.5  # the thickness of photoresist protecting your wafer outside of your target profile.
-# r_target = 20  # the radial distance (microns) over which the mean peak height (depth) is calculated.
-# wfr.backout_process_to_achieve_target(target_radius=target_radius,
-#                                       target_depth=target_depth_profile,
-#                                       thickness_PR=thickness_PR,
-#                                       thickness_PR_budget=thickness_PR_budget,
-#                                       r_target=r_target,
-#                                       save_fig=True)
-#
-# # ---
-#
-# """
-# 'compare_target_to_feature_evolution' plots your profilometry data (i.e., 'features') on top of your target profile for
-# each step in your process flow. The variables 'px' and 'py' are which coordinates you want to plot.
-# """
-# wfr.compare_target_to_feature_evolution(px='r', py='z', save_fig=True)
-#
-# # ---
+# ----------------------------------------------------------------------------------------------------------------------
+# END PRIMARY DATA PROCESSING FUNCTIONS
+# ----------------------------------------------------------------------------------------------------------------------
+
+"""
+At this point, all of the data has been parsed and structured. The following functions can be optionally called to
+interpret the data.
+"""
+
+# ---
+
+"""
+'plot_exposure_profile': plot figure showing your design profile.
+"""
+features_of_interest = False#['a1_erf3', 'b1_erf3', 'a1_Lr', 'b1_Lr']
+def plot_featurs_of_interest():
+    features_of_interest = features_of_interest_Txt.get()
+    features_of_interest=features_of_interest.replace(' ', '').split(',')
+    if wfr!=False:
+        try:
+            for foi in features_of_interest:
+                gpf = wfr.features[foi]
+                plotting.plot_exposure_profile(gcf=gpf, path_save=join(wfr.path_results, 'figs'), save_type=save_type)
+        except:
+            Output.delete("1.0", "end")
+            Output.insert('1.0','Feature error:- '+str(features_of_interest)+ ' is not a aviable feature \n')
+    else:
+        Output.delete("1.0", "end")
+        Output.insert('1.0','Plot features of interst err:- Step 4 not completed')
+
+"""
+'backout_process_to_achieve_target' starts with your 'target_profile' and reverse engineers what processes you should
+run and how you should pattern your photoresist.
+"""
+thickness_PR = 7.5  # photoresist thickness, this variable could be interpreted from process_flow or inputted here.
+thickness_PR_budget = 1.5  # the thickness of photoresist protecting your wafer outside of your target profile.
+r_target = 20  # the radial distance (microns) over which the mean peak height (depth) is calculated.
+def backout_process_to_achieve_target_plot():
+    global thickness_PR
+    thickness_PR_err=''
+    global thickness_PR_budget
+    thickness_PR_budget_err=''
+    global r_target
+    r_target_err=''
+    thickness_PR = thickness_PR_Txt.get('1.0','end-1c')
+    if thickness_PR.replace('.', '', 1).replace('e', '', 1).replace('-', '', 1).isdigit():
+        thickness_PR = float(thickness_PR)
+    else:
+        thickness_PR_err = thickness_PR + ' is not a float'
+    thickness_PR_budget = thickness_PR_budget_Txt.get('1.0', 'end-1c')
+    if thickness_PR_budget.replace('.', '', 1).replace('e', '', 1).replace('-', '', 1).isdigit():
+        thickness_PR_budget = float(thickness_PR_budget)
+    else:
+        thickness_PR_budget_err = thickness_PR_budget + ' is not a float'
+    r_target = r_target_Txt.get('1.0', 'end-1c')
+    if r_target.replace('.', '', 1).replace('e', '', 1).replace('-', '', 1).isdigit():
+        r_target = float(r_target)
+    else:
+        r_target_err = r_target + ' is not a float'
+
+    if wfr!=False:
+        try:
+            wfr.backout_process_to_achieve_target(target_radius=target_radius,
+                                                  target_depth=target_depth_profile,
+                                                  thickness_PR=thickness_PR,
+                                                  thickness_PR_budget=thickness_PR_budget,
+                                                  r_target=r_target,
+                                                  save_fig=True)
+            Output.delete("1.0", "end")
+            Output.insert('1.0', 'Estimate photoresist process completed with:'
+                          + 'thickness_PR : ' + thickness_PR + '\n'
+                          + 'thickness_PR_budget err:- ' + thickness_PR_budget + '\n'
+                          + 'r_target err:- ' + r_target + '\n'
+                          )
+        except:
+            Output.delete("1.0", "end")
+            Output.insert('1.0', 'Estimate photoresist process err:-'
+                          + 'thickness_PR err:- ' + thickness_PR_err + '\n'
+                          + 'thickness_PR_budget err:- ' + thickness_PR_budget_err + '\n'
+                          + 'r_target err:- ' + r_target_err + '\n'
+                          )
+    else:
+        Output.delete("1.0", "end")
+        Output.insert('1.0', 'Estimate photoresist process err:- Step 4 not completed')
+
+
+# ---
+
+"""
+'compare_target_to_feature_evolution' plots your profilometry data (i.e., 'features') on top of your target profile for
+each step in your process flow. The variables 'px' and 'py' are which coordinates you want to plot.
+"""
+wfr.compare_target_to_feature_evolution(px='r', py='z', save_fig=True)
+
+# ---
 #
 # """
 # 'characterize_exposure_dose_depth_relationship' calculates the relationship between exposure intensity (mJ) and
@@ -884,15 +727,15 @@ def eval_process():
 # doesn't really give any meaningful information right now. It needs to be upgraded.
 # """
 # wfr.grade_profile_accuracy(step=max(wfr.list_steps), target_radius=target_radius, target_depth=target_depth_profile)
-#
-#
-# # ---
-#
-# # ----------------------------------------------------------------------------------------------------------------------
-# # END DATA ANALYSIS FUNCTIONS
-# # ----------------------------------------------------------------------------------------------------------------------
-#
-# print("example_flow.py completed without errors.")
+
+
+# ---
+
+# ----------------------------------------------------------------------------------------------------------------------
+# END DATA ANALYSIS FUNCTIONS
+# ----------------------------------------------------------------------------------------------------------------------
+
+print("example_flow.py completed without errors.")
 title_size = 10
 letter_size = 8
 if __name__ == '__main__':
@@ -954,8 +797,8 @@ if __name__ == '__main__':
     root.update()
 
     # Read processflow buton lauches the functionio.read_processflow
-    readProces = tk.Button(root, text="Read process flow", font=('Helvetica', 8), command=lambda: read_processFlow())
-    readProces.place(x=10, y=save_type_Txt.winfo_y() + save_type_Txt.winfo_height() + 5)
+    readProces_Button = tk.Button(root, text="Read process flow", font=('Helvetica', 8), command=lambda: read_processFlow())
+    readProces_Button.place(x=10, y=save_type_Txt.winfo_y() + save_type_Txt.winfo_height() + 5)
     root.update()
 
     ################## Step 2 ############################################
@@ -1058,9 +901,9 @@ if __name__ == '__main__':
     root.update()
 
     # Initailze Features
-    initFeaturesDesigns = tk.Button(root, text="Initialize Features", font=('Helvetica', letter_size), command=lambda: init_featuresDesigns())
-    initFeaturesDesigns.place(x=step2Label.winfo_x(),
-                              y=target_radius_Txt.winfo_y() + target_radius_Txt.winfo_height() + 5)
+    initFeaturesDesigns_Button = tk.Button(root, text="Initialize Features", font=('Helvetica', letter_size), command=lambda: init_featuresDesigns())
+    initFeaturesDesigns_Button.place(x=step2Label.winfo_x(),
+                                     y=target_radius_Txt.winfo_y() + target_radius_Txt.winfo_height() + 5)
     root.update()
 
     ############## Step 3 initalize the wafer ##########################
@@ -1069,24 +912,24 @@ if __name__ == '__main__':
     root.update()
 
     # target_radius: (units: microns) defines the radial distance of our target profile.
-    profilometry_tool_Label = tk.Button(root, text="Profilometry tool (str)", font=('Helvetica', letter_size),
-                                    command=lambda: slect_profilometry(profilometry_tool_Txt.get()))
-    profilometry_tool_Label.place(x=step3Label.winfo_x(), y=step3Label.winfo_y() + step3Label.winfo_height())
+    profilometry_tool_Button = tk.Button(root, text="Profilometry tool (str)", font=('Helvetica', letter_size),
+                                         command=lambda: slect_profilometry(profilometry_tool_Txt.get(),wafer_step3,letter_size,title_size))
+    profilometry_tool_Button.place(x=step3Label.winfo_x(), y=step3Label.winfo_y() + step3Label.winfo_height())
     root.update()
     profilometry_tool_Txt = tk.Entry(root, width=15, font=("Helvetica", letter_size))
-    profilometry_tool_Txt.place(x=profilometry_tool_Label.winfo_x() + profilometry_tool_Label.winfo_width() + 5,
-                            y=profilometry_tool_Label.winfo_y())
+    profilometry_tool_Txt.place(x=profilometry_tool_Button.winfo_x() + profilometry_tool_Button.winfo_width() + 5,
+                                y=profilometry_tool_Button.winfo_y())
     root.update()
     # Initailze Features
-    initWafer = tk.Button(root, text="Initialize Wafer", font=('Helvetica', letter_size),
-                                    command=lambda: init_Wafer())
-    initWafer.place(x=step3Label.winfo_x(),
-                              y=profilometry_tool_Label.winfo_y() + profilometry_tool_Label.winfo_height() + 5)
+    initWafer_Button = tk.Button(root, text="Initialize Wafer", font=('Helvetica', letter_size),
+                                 command=lambda: init_Wafer())
+    initWafer_Button.place(x=step3Label.winfo_x(),
+                           y=profilometry_tool_Button.winfo_y() + profilometry_tool_Button.winfo_height() + 5)
     root.update()
 
     ####### Step 4 #################
     step4Label = tk.Label(root, text="Step 4: Wafer data evaluation", font=('Helvetica', title_size))
-    step4Label.place(x=step3Label.winfo_x(), y=initWafer.winfo_y()+initWafer.winfo_height()+5)
+    step4Label.place(x=step3Label.winfo_x(), y=initWafer_Button.winfo_y() + initWafer_Button.winfo_height() + 5)
     root.update()
 
     #evaluate_signal_processing: (True or False) Optionally, plot various signal processing methods to smooth profilometry data.
@@ -1193,11 +1036,69 @@ if __name__ == '__main__':
     root.update()
 
     # Evaluate process button
-    initWafer = tk.Button(root, text="Initialize Wafer", font=('Helvetica', letter_size),
+    evalProces_Button = tk.Button(root, text="Evaluate wafer data", font=('Helvetica', letter_size),
                                     command=lambda: eval_process())
-    initWafer.place(x=plot_width_rel_target_radius_Label.winfo_x(),
+    evalProces_Button.place(x=plot_width_rel_target_radius_Label.winfo_x(),
                               y=save_merged_profilometry_data_OnOff.winfo_y() + save_merged_profilometry_data_OnOff.winfo_height() + 5)
     root.update()
+
+    ## Plot features of interst: features_of_interest
+    step5Label = tk.Label(root, text="Step 5: Plot data evaluation", font=('Helvetica', title_size))
+    step5Label.place(x=plot_width_rel_target_radius_Label.winfo_x(), y=10+evalProces_Button.winfo_y()+evalProces_Button.winfo_height())
+    root.update()
+
+
+    features_of_interest_Button = tk.Button(root, text="Plot features of interst", font=('Helvetica', letter_size),
+                                    command=lambda: plot_featurs_of_interest())
+    features_of_interest_Button.place(x=plot_width_rel_target_radius_Label.winfo_x(),
+                            y=step5Label.winfo_y() + step5Label.winfo_height() + 5)
+    root.update()
+    features_of_interest_Txt = tk.Entry(root, width=10, font=("Helvetica", letter_size))
+    features_of_interest_Txt.place(
+        x=features_of_interest_Button.winfo_x() + features_of_interest_Button.winfo_width() + 5,
+        y=features_of_interest_Button.winfo_y()+5)
+    root.update()
+
+    # photoresist thickness, this variable could be interpreted from process_flow or inputted here.
+    thickness_PR_Label = tk.Label(root, text="Photoresist thickness", font=('Helvetica', letter_size))
+    thickness_PR_Label.place(x=plot_width_rel_target_radius_Label.winfo_x(),
+                             y=features_of_interest_Button.winfo_y() + features_of_interest_Button.winfo_height() + 5)
+    root.update()
+    thickness_PR_Txt = tk.Text(root, width=10,height=1, font=("Helvetica", letter_size))
+    thickness_PR_Txt.place(
+        x=thickness_PR_Label.winfo_x() + thickness_PR_Label.winfo_width() + 5,
+        y=thickness_PR_Label.winfo_y())
+    root.update()
+
+    # the thickness of photoresist protecting your wafer outside of your target profile.
+    thickness_PR_budget_Label = tk.Label(root, text="Proteceing photoresist", font=('Helvetica', letter_size))
+    thickness_PR_budget_Label.place(x=plot_width_rel_target_radius_Label.winfo_x(),
+                             y=thickness_PR_Label.winfo_y() + thickness_PR_Label.winfo_height() + 5)
+    root.update()
+    thickness_PR_budget_Txt = tk.Text(root, width=10, height=1, font=("Helvetica", letter_size))
+    thickness_PR_budget_Txt.place(
+        x=thickness_PR_budget_Label.winfo_x() + thickness_PR_budget_Label.winfo_width() + 5,
+        y=thickness_PR_budget_Label.winfo_y())
+    root.update()
+
+    # the radial distance (microns) over which the mean peak height (depth) is calculated.
+    r_target_Label = tk.Label(root, text='Radius to peak hight', font=('Helvetica', letter_size))
+    r_target_Label.place(x=plot_width_rel_target_radius_Label.winfo_x(),
+                                    y=thickness_PR_budget_Label.winfo_y() + thickness_PR_budget_Label.winfo_height() + 5)
+    root.update()
+    r_target_Txt = tk.Text(root, width=10, height=1, font=("Helvetica", letter_size))
+    r_target_Txt.place(
+        x=r_target_Label.winfo_x() + r_target_Label.winfo_width() + 5,
+        y=r_target_Label.winfo_y())
+    root.update()
+
+     # Button to initialize process
+    backout_process_to_achieve_target_Label = tk.Button(root, text="Estimate photoresist process",
+                                                        font=('Helvetica', letter_size),
+                                                        command=lambda: plot_featurs_of_interest())
+    backout_process_to_achieve_target_Label.place(x=plot_width_rel_target_radius_Label.winfo_x(),
+                                                  y=r_target_Label.winfo_y() + r_target_Label.winfo_height() + 5)
+
     # # Read processflow buton lauches the functionio.read_processflow
     # readProces = tk.Button(root, text="Read process flow", font=('calbiri', 11), command=lambda: read_processFlow())
     # readProces.place(x=10, y=save_type_Txt.winfo_y() + save_type_Txt.winfo_height() + 5)
@@ -1215,7 +1116,7 @@ if __name__ == '__main__':
     #
     # puttig the text/error log field
     Output = tk.Text(root, height=20,width=40,bg="light cyan",font=("Helvetica", letter_size))
-    Output.place(x=10, y=readProces.winfo_y() + readProces.winfo_height() + 10)
+    Output.place(x=10, y=readProces_Button.winfo_y() + readProces_Button.winfo_height() + 10)
     root.update()
 
     # #The figure on the user interface window#
@@ -1232,7 +1133,7 @@ if __name__ == '__main__':
     # creating the Tkinter canvas
     # containing the Matplotlib figure
     canvas = FigureCanvasTkAgg(fig,master=root)
-    canvas.get_tk_widget().place(x=step2Label.winfo_x(), y=initFeaturesDesigns.winfo_y() + initFeaturesDesigns.winfo_height() + 5)
+    canvas.get_tk_widget().place(x=step2Label.winfo_x(), y=initFeaturesDesigns_Button.winfo_y() + initFeaturesDesigns_Button.winfo_height() + 5)
     canvas.draw()
     toolbar = NavigationToolbar2Tk(canvas,root)
     toolbar.update()
