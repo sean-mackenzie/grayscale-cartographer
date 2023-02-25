@@ -714,11 +714,12 @@ def plot_process_feature_profilometry(graycart_process, save_fig=False, save_typ
     ax.set_title(graycart_process.descriptor)
     ax.legend(title='Dose, Focus', loc='upper left', bbox_to_anchor=(1, 1), markerscale=3)
 
-    plt.tight_layout()
+    # plt.tight_layout()
     if save_fig:
         save_path = join(graycart_process.ppath, 'results')
         if not isdir(save_path):
             makedirs(save_path)
+        print(join(save_path, graycart_process.subpath + '_multi' + save_type))
         plt.savefig(join(save_path, graycart_process.subpath + '_multi' + save_type))
     else:
         plt.show()

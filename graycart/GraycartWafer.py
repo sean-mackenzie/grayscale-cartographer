@@ -173,7 +173,7 @@ class GraycartWafer(object):
                 else:
                     raise ValueError()
 
-                gcprocess.add_profilometry_to_features(plot_fits=plot_fits,
+                gcprocess.add_profilometry_to_features(plot_fits=False,
                                                        perform_rolling_on=perform_rolling_on,
                                                        evaluate_signal_processing=evaluate_signal_processing,
                                                        downsample=downsample,
@@ -186,8 +186,10 @@ class GraycartWafer(object):
                                                        )
 
                 if plot_fits:
-                    gcprocess.plot_profilometry_feature_fits(save_fig=plot_fits)
-                    gcprocess.plot_profilometry_features(save_fig=plot_fits)
+                    # gcprocess.plot_profilometry_feature_fits(save_fig=plot_fits)
+                    gcprocess.plot_profilometry_features(save_fig=True )#plot_fits)
+                    raise ValueError()
+                    print('sdfasdf')
 
     def merge_processes_profilometry(self, export=False):
 
