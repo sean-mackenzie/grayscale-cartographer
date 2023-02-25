@@ -1,5 +1,6 @@
 import tkinter as tk
 import pandas as pd
+from pathlib import Path
 class wafer_init:
     def __init__(self,measurement_methods,measurement_methods_err):
         self.measurement_methods=measurement_methods
@@ -158,35 +159,55 @@ def slect_profilometry(profilometry_tool,wafer_step3,letter_size,title_size):
                                y=headr_misc_Label.winfo_y())
     profilo_window.update()
     def load_parameters():
-        parameters_path=load_parameters_Text.get()
+        # Allow user to select a directory and store it in global var
+        # called folder_path
+        path = str(Path.cwd())
+        try:
+            file = tk.filedialog.askopenfile(initialdir=path,
+                                            title='Select a file',
+                                            mode='r',
+                                            filetypes=[('Excel file', '*.xlsx'),('CSV Files','*.csv')])
+            if file:
+               parameters_path=file.name
+               load_parameters_Text.insert('1.0',parameters_path.rpartition('/')[2])
+
+        except:
+            tk.messagebox.showwarning("showwarning", "Pleas select a CSV of XLSX file")
+
+        try:
+            parameters = pd.read_excel(parameters_path) ## seheet_name='Measurement_methods' net tim
+        except:
+            pass
         try:
             parameters = pd.read_excel(parameters_path)
         except:
-            parameters = pd.read_csv(parameters_path)
-        data_profile_list = parameters['data_profile'].to_list()
-        data_etch_monitor_list = parameters['data_etch_monitor'].to_list()
-        data_optical_list = parameters['data_optical'].to_list()
-        data_misc = parameters['data_misc'].to_list()
-
-        # Profilometry
-        filetype_read_Txt.insert("1.0",data_profile_list[0])
-        x_units_read_Txt.insert('1.0',data_profile_list[1])
-        y_units_read_Txt.insert('1.0',data_profile_list[2])
-        filetype_write_Txt.insert('1.0',data_profile_list[3])
-        x_units_write_Txt.insert('1.0',data_profile_list[4])
-        y_units_write_Txt.insert('1.0',data_profile_list[5])
-        # Data etch monitor
-        header_etch_moitor_Txt.insert('1.0',data_etch_monitor_list[0])
-        filetype_read_etcher_Txt.insert('1.0',data_etch_monitor_list[1])
-        filetype_write_etcher_Txt.insert('1.0',data_etch_monitor_list[2])
-        # Data Optical
-        header_optical_Txt.insert('1.0', data_optical_list[0])
-        filetype_read_optical_Txt.insert('1.0', data_optical_list[1])
-        filetype_write_optical_Txt.insert('1.0', data_optical_list[2])
-        # Data Misceallenouse
-        header_misc_Txt.insert('1.0', data_misc[0])
-        filetype_read_misc_Txt.insert('1.0', data_misc[1])
-        filetype_write_misc_Txt.insert('1.0', data_misc[2])
+            pass
+        try:
+            data_profile_list = parameters['data_profile'].to_list()
+            data_etch_monitor_list = parameters['data_etch_monitor'].to_list()
+            data_optical_list = parameters['data_optical'].to_list()
+            data_misc = parameters['data_misc'].to_list()
+            # Profilometry
+            filetype_read_Txt.insert("1.0",data_profile_list[0])
+            x_units_read_Txt.insert('1.0',data_profile_list[1])
+            y_units_read_Txt.insert('1.0',data_profile_list[2])
+            filetype_write_Txt.insert('1.0',data_profile_list[3])
+            x_units_write_Txt.insert('1.0',data_profile_list[4])
+            y_units_write_Txt.insert('1.0',data_profile_list[5])
+            # Data etch monitor
+            header_etch_moitor_Txt.insert('1.0',data_etch_monitor_list[0])
+            filetype_read_etcher_Txt.insert('1.0',data_etch_monitor_list[1])
+            filetype_write_etcher_Txt.insert('1.0',data_etch_monitor_list[2])
+            # Data Optical
+            header_optical_Txt.insert('1.0', data_optical_list[0])
+            filetype_read_optical_Txt.insert('1.0', data_optical_list[1])
+            filetype_write_optical_Txt.insert('1.0', data_optical_list[2])
+            # Data Misceallenouse
+            header_misc_Txt.insert('1.0', data_misc[0])
+            filetype_read_misc_Txt.insert('1.0', data_misc[1])
+            filetype_write_misc_Txt.insert('1.0', data_misc[2])
+        except:
+            tk.messagebox.showwarning("showwarning", "No file selected")
 
     def quit():
         ### getting the data and convert intot the talbe that we want to have
@@ -254,7 +275,7 @@ def slect_profilometry(profilometry_tool,wafer_step3,letter_size,title_size):
                                        command=lambda: load_parameters())
     load_parameters_Button.place(x=10, y=headr_misc_Label.winfo_y() + headr_misc_Label.winfo_height() + 5)
     profilo_window.update()
-    load_parameters_Text = tk.Entry(profilo_window, width=10, font=("Helvetica", letter_size))
+    load_parameters_Text = tk.Text(profilo_window, width=10,height=1, font=("Helvetica", letter_size))
     load_parameters_Text.place(x=5+load_parameters_Button.winfo_x()+load_parameters_Button.winfo_width(),
                                y=headr_misc_Label.winfo_y() + headr_misc_Label.winfo_height() + 5)
     profilo_window.update()
