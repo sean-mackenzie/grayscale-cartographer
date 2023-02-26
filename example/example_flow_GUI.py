@@ -66,11 +66,19 @@ def browse_button():
     # Allow user to select a directory and store it in global var
     # called folder_path
     global base_path
+    global fn_pflow
     path = str(Path.cwd())
-    base_path = tk.filedialog.askdirectory(initialdir=path,
-                                       title='Select a file',)
-    base_path_Txt.insert('1.0',base_path)
-    Output.insert('1.0','base path set to'+base_path)
+    file = tk.filedialog.askopenfile(initialdir=path,
+                                     title='Select proces-flow file',
+                                     mode='r',
+                                     filetypes=[('Excel file', '*.xlsx'), ('CSV Files', '*.csv')])
+    if file:
+        base_path = file.name.rpartition('/')[0]
+        base_path_Txt.insert('1.0', base_path)
+        fn_pflow=file.name.rpartition('/')[2]
+        Output.delete("1.0", "end")
+        Output.insert('1.0','base path set to'+base_path+'\n'
+                      +'Proseflow file selected:- '+fn_pflow+'\n')
 
 #
 # functions
@@ -88,7 +96,7 @@ def read_processFlow():
     except:
         wid_err = 'Wafer ID is not int'
     path_results = path_results_Txt.get('1.0', 'end-1c')
-    save_type = '.'+ save_type_Txt.get('1.0', 'end-1c')
+    save_type = save_type_tkvar.get()
     try:
         process_flow = io.read_process_flow(fp=join(base_path, fn_pflow))
         Output.delete("1.0", "end")
@@ -106,6 +114,11 @@ def read_processFlow():
         Output.delete("1.0", "end")
         Output.insert("1.0", "Step 1 errors:" + '\n'
                       +"You scrwed up" + '\n'
+                      +'Wafer ID error:- '+wid_err+ '\n'
+                      +'Process flow name error:- '+fn_pflow_err+'\n'
+                      )
+        tk.messagebox.showerror("Step 1 errors:",
+                      "You scrwed up your" + '\n'
                       +'Wafer ID error:- '+wid_err+ '\n'
                       +'Process flow name error:- '+fn_pflow_err+'\n'
                       )
@@ -188,11 +201,11 @@ def init_featuresDesigns():
     fem_dxdy_err = ''
 
 
-    design_spacing = design_spacing_Txt.get('1.0', 'end-1c').replace(' ', '')
-    if design_spacing.replace('.', '', 1).replace('e', '', 1).isdigit():
-        design_spacing = float(design_spacing)
-    else:
-        design_spacing_err = 'Your desing spaicing is not a digital'
+    # design_spacing = design_spacing_Txt.get('1.0', 'end-1c').replace(' ', '')
+    # if design_spacing.replace('.', '', 1).replace('e', '', 1).isdigit():
+    #    design_spacing = float(design_spacing)
+    # else:
+    #    design_spacing_err = 'Your desing spaicing is not a digital'
     design_lbls = design_lbls_Txt.get('1.0', 'end-1c').replace(' ', '').split(',')
     target_lbls = target_lbls_Txt.get('1.0', 'end-1c').replace(' ', '').split(',')
     if target_lbls[0]=='None':
@@ -267,7 +280,6 @@ def init_featuresDesigns():
                           + 'Target labels: ' + target_lbls_Txt.get('1.0', 'end-1c') + '\n'
                           + 'Target depth: ' + target_depth_profile_Txt.get('1.0', 'end-1c') + '\n'
                           + 'Design locations: ' + design_locs_Txt.get('1.0', 'end-1c') + '\n'
-                          + 'Design spacing: ' + design_spacing_Txt.get('1.0', 'end-1c') + '\n'
                           + 'Design indices ' + design_ids_Txt.get('1.0', 'end-1c') + '\n'
                           + 'Design labels ' + design_lbls_Txt.get('1.0', 'end-1c') + '\n'
                           + 'Dose labels: '+dose_lbls_Txt.get('1.0', 'end-1c')+'\n'
@@ -297,10 +309,28 @@ def init_featuresDesigns():
                           + 'Dose labels err:- ' + dose_lbls_err + '\n'
                           + 'Focus label err:- '+focus_lbls_err + '\n'
                           + 'Fem_dxdy err:- '+fem_dxdy_err + '\n\n')
+            tk.messagebox.showerror("Step 2 errors:",
+                            "You scrwed up" + '\n'
+                          + 'Target radius err:- ' + target_radius_err + '\n'
+                          + 'Target labels err:- ' + target_lbls_err + '\n'
+                          + 'Target depth err:- ' + target_depth_profile_err + '\n'
+                          + 'Design err:- '+designs_err + '\n'
+                          + 'Design locations err:- ' + design_locs_err + '\n'
+                          + 'Design spacing err:- ' + design_spacing_err + '\n'
+                          + 'Design indices err:- '+design_ids_err + '\n'
+                          + 'Design labels err:- ' + design_lbls_err + '\n'
+                          + 'Dose labels err:- ' + dose_lbls_err + '\n'
+                          + 'Focus label err:- '+focus_lbls_err + '\n'
+                          + 'Fem_dxdy err:- '+fem_dxdy_err + '\n\n')
     else:
         Output.delete("1.0", "end")
         Output.insert("1.0", "Step 2 Desing errors:" + '\n'
                       +"Do step 1 first" + '\n\n')
+        tk.messagebox.showerror("Step 2 errors:",
+                                "You scrwed up" + '\n'
+                                + "Do step 1 first" + '\n\n'
+                                )
+
 
 class cicleXY:
     def __init__(self, center, radius):
@@ -386,8 +416,13 @@ def init_Wafer():
                           + 'Optical:- ' +str(measurement_methods['Optical'])+ '\n'
                           + 'Miscellaneous:- ' +str(measurement_methods['Misc'])+ '\n'
                           )
-        print(measurement_methods)
-        print(str(measurement_methods['Misc']))
+            tk.messagebox.showerror("Step 3 errors:",
+                                    "You scrwed up" + '\n'
+                                    + 'Profilometry err:- ' + str(measurement_methods_err) + '\n'
+                                    + 'Etch monitor:- ' + str(measurement_methods['Etch Monitor']) + '\n'
+                                    + 'Optical:- ' + str(measurement_methods['Optical']) + '\n'
+                                    + 'Miscellaneous:- ' + str(measurement_methods['Misc']) + '\n'
+                                    )
     else:
         wfr = False
         Output.delete("1.0", "end")
@@ -395,6 +430,11 @@ def init_Wafer():
                       + "You scrwed up" + '\n'
                       + 'Do step 2 first' + '\n'
                       )
+        tk.messagebox.showerror("Step 3 errors:",
+                                "You scrwed up" + '\n'
+                                + 'Do step 2 first'
+                                )
+
 
 """
 4. Read, process, and evaluate the 'measurement_methods' data.
@@ -466,8 +506,6 @@ def save_profi_proc_fig_OnOff():
     else:
         save_profilometry_processing_figures_OnOff.config(image=off)
         save_profilometry_processing_figures = False
-
-    print(save_profilometry_processing_figures)
 # functions
 
 save_merged_profilometry_data = False
@@ -479,7 +517,6 @@ def save_merged_prof_data_OnOff():
     else:
         save_merged_profilometry_data_OnOff.config(image=off)
         save_merged_profilometry_data = False
-    print(save_merged_profilometry_data)
 
 def eval_process():
     global lambda_peak_rel_height
@@ -528,50 +565,63 @@ def eval_process():
         plot_width_rel_target_radius_err = plot_width_rel_target_radius + ' is not convertable to float'
 
     if wfr!=False:
-        try:
-            print('after try')
-            print(save_profilometry_processing_figures)
-            print('after try')
-            print(save_merged_profilometry_data)
-            wfr.evaluate_process_profilometry(plot_fits=save_profilometry_processing_figures,
-                                              perform_rolling_on=perform_rolling_on,
-                                              evaluate_signal_processing=evaluate_signal_processing,
-                                              plot_width_rel_target=plot_width_rel_target_radius,
-                                              peak_rel_height=peak_rel_height,
-                                              downsample=downsample,
-                                              width_rel_radius=width_rel_radius,
-                                              fit_func=fit_func,
-                                              prominence=prominence,
-                                              )
+        # try:
+        # print('after try')
+        # print(save_profilometry_processing_figures)
+        # print('after try')
+        print(save_merged_profilometry_data)
+        wfr.evaluate_process_profilometry(plot_fits=save_profilometry_processing_figures,
+                                          perform_rolling_on=perform_rolling_on,
+                                          evaluate_signal_processing=evaluate_signal_processing,
+                                          plot_width_rel_target=plot_width_rel_target_radius,
+                                          peak_rel_height=peak_rel_height,
+                                          downsample=downsample,
+                                          width_rel_radius=width_rel_radius,
+                                          fit_func=fit_func,
+                                          prominence=prominence,
+                                          )
 
-            wfr.merge_processes_profilometry(export=save_merged_profilometry_data)
-            Output.delete("1.0", "end")
-            Output.insert("1.0", 'Step 4: Wafer initalization' + '\n'
-                          + 'Wafer succesfully evaluated with:' + '\n'
-                          + 'peak_rel_height: ' + str(peak_rel_height) + '\n'
-                          + 'downsample: ' + str(downsample) + '\n'
-                          + 'width_rel_radius: ' + str(width_rel_radius) + '\n'
-                          + 'prominence ' + str(prominence) + '\n'
-                          + 'fit_func ' + fit_func + '\n'
-                          + 'plot_width_rel_target_radius: ' + str(plot_width_rel_target_radius)+ '\n'
-                          )
-        except:
-            Output.delete("1.0", "end")
-            Output.insert("1.0", "Step 3: Wafer evaluation errors:" + '\n'
-                          + "You scrwed up" + '\n'
-                          + 'peak_rel_height err:- ' + peak_rel_height_err + '\n'
-                          + 'downsample err:- ' + downsample_err + '\n'
-                          + 'width_rel_radius err:- ' + width_rel_radius_err + '\n'
-                          + 'prominence err:- ' + prominence_err + '\n'
-                          + 'fit_func err:- ' + fit_func_err + '\n'
-                          + 'plot_width_rel_target_radius err:- ' + plot_width_rel_target_radius_err + '\n'
-                          )
+        wfr.merge_processes_profilometry(export=save_merged_profilometry_data)
+        Output.delete("1.0", "end")
+        Output.insert("1.0", 'Step 4: Wafer initalization' + '\n'
+                      + 'Wafer succesfully evaluated with:' + '\n'
+                      + 'peak_rel_height: ' + str(peak_rel_height) + '\n'
+                      + 'downsample: ' + str(downsample) + '\n'
+                      + 'width_rel_radius: ' + str(width_rel_radius) + '\n'
+                      + 'prominence ' + str(prominence) + '\n'
+                      + 'fit_func ' + fit_func + '\n'
+                      + 'plot_width_rel_target_radius: ' + str(plot_width_rel_target_radius)+ '\n'
+                      )
+        # except:
+        #     Output.delete("1.0", "end")
+        #     Output.insert("1.0", "Step 4: Wafer evaluation errors:" + '\n'
+        #                   + "You scrwed up" + '\n'
+        #                   + 'peak_rel_height err:- ' + peak_rel_height_err + '\n'
+        #                   + 'downsample err:- ' + downsample_err + '\n'
+        #                   + 'width_rel_radius err:- ' + width_rel_radius_err + '\n'
+        #                   + 'prominence err:- ' + prominence_err + '\n'
+        #                   + 'fit_func err:- ' + fit_func_err + '\n'
+        #                   + 'plot_width_rel_target_radius err:- ' + plot_width_rel_target_radius_err + '\n'
+        #                   )
+        #     tk.messagebox.showerror("SStep 4: Wafer evaluation errors:",
+        #                             "You scrwed up" + '\n'
+        #                             + 'peak_rel_height err:- ' + peak_rel_height_err + '\n'
+        #                             + 'downsample err:- ' + downsample_err + '\n'
+        #                             + 'width_rel_radius err:- ' + width_rel_radius_err + '\n'
+        #                             + 'prominence err:- ' + prominence_err + '\n'
+        #                             + 'fit_func err:- ' + fit_func_err + '\n'
+        #                             + 'plot_width_rel_target_radius err:- ' + plot_width_rel_target_radius_err + '\n'
+        #                             )
     else:
         Output.delete("1.0", "end")
         Output.insert("1.0", "Step 4: Wafer evaluation errors:" + '\n'
                       + "You scrwed up" + '\n'
                       + 'Do step 3 first' + '\n'
                       )
+        tk.messagebox.showerror("SStep 4: Wafer evaluation errors:",
+                                "You scrwed up" + '\n'
+                                + 'Do step 3 first'
+                                )
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -590,7 +640,7 @@ interpret the data.
 """
 features_of_interest = False#['a1_erf3', 'b1_erf3', 'a1_Lr', 'b1_Lr']
 def plot_exposure_profile():
-    features_of_interest = features_of_interest_Txt.get('1.0', 'end-1c')
+    features_of_interest = plot_exposure_profile_Txt.get('1.0', 'end-1c')
     features_of_interest=features_of_interest.replace(' ', '').split(',')
     if wfr!=False:
         try:
@@ -599,10 +649,14 @@ def plot_exposure_profile():
                 plotting.plot_exposure_profile(gcf=gpf, path_save=join(wfr.path_results, 'figs'), save_type=save_type)
         except:
             Output.delete("1.0", "end")
-            Output.insert('1.0','Feature error:- '+str(features_of_interest)+ ' is not a aviable feature \n')
+            Output.insert('1.0','features_of_interest error:- '+str(features_of_interest)+ ' is not a aviable feature \n')
     else:
         Output.delete("1.0", "end")
-        Output.insert('1.0','Plot features of interst err:- Step 4 not completed')
+        Output.insert('1.0','features_of_interest err:- Step 4 not completed')
+        tk.messagebox.showerror("features_of_interest err:",
+                                "You scrwed up" + '\n'
+                                + 'Step 4 not completed'
+                                )
 
 """
 'backout_process_to_achieve_target' starts with your 'target_profile' and reverse engineers what processes you should
@@ -643,22 +697,31 @@ def backout_process_to_achieve_target():
                                                   r_target=r_target,
                                                   save_fig=True)
             Output.delete("1.0", "end")
-            Output.insert('1.0', 'Estimate photoresist process completed with:'
+            Output.insert('1.0', 'backout_process_to_achieve_target completed with:'
                           + 'thickness_PR : ' + thickness_PR + '\n'
                           + 'thickness_PR_budget err:- ' + thickness_PR_budget + '\n'
                           + 'r_target err:- ' + r_target + '\n'
                           )
         except:
             Output.delete("1.0", "end")
-            Output.insert('1.0', 'Estimate photoresist process err:-'
+            Output.insert('1.0', 'backout_process_to_achieve_target err:-'
                           + 'thickness_PR err:- ' + thickness_PR_err + '\n'
                           + 'thickness_PR_budget err:- ' + thickness_PR_budget_err + '\n'
                           + 'r_target err:- ' + r_target_err + '\n'
                           )
+            tk.messagebox.showerror("backout_process_to_achieve_target err:",
+                                    "You scrwed up" + '\n'
+                                    +'thickness_PR err:- ' + thickness_PR_err + '\n'
+                                    + 'thickness_PR_budget err:- ' + thickness_PR_budget_err + '\n'
+                                    + 'r_target err:- ' + r_target_err + '\n'
+                                    )
     else:
         Output.delete("1.0", "end")
         Output.insert('1.0', 'Estimate photoresist process err:- Step 4 not completed')
-
+        tk.messagebox.showerror("backout_process_to_achieve_target err:",
+                                            "You scrwed up" + '\n'
+                                            + 'Step 4 not completed'
+                                            )
 
 # ---
 
@@ -669,11 +732,15 @@ each step in your process flow. The variables 'px' and 'py' are which coordinate
 def compare_target_to_feature_evolution():
     if wfr!=False:
         Output.delete("1.0", "end")
-        Output.insert('1.0', 'Plorts your profilometry data vs target profile')
+        Output.insert('1.0', 'compare_target_to_feature_evolution')
         wfr.compare_target_to_feature_evolution(px='r', py='z', save_fig=True)
     else:
         Output.delete("1.0", "end")
-        Output.insert('1.0', 'Plorts your profilometry data vs target profile err:- Step 4 not completed')
+        Output.insert('1.0', 'compare_target_to_feature_evolution err:- Step 4 not completed')
+        tk.messagebox.showerror("backout_process_to_achieve_target err:",
+                                "You scrwed up" + '\n'
+                                + 'Step 4 not completed'
+                                )
 # ---
 
 """
@@ -683,14 +750,18 @@ photoresist depth (microns). 'z_standoff_measure
 def characterize_exposure_dose_depth_relationship():
     if wfr!=False:
         Output.delete("1.0", "end")
-        Output.insert('1.0', 'Plots exposure dose depth relationship')
+        Output.insert('1.0', 'characterize_exposure_dose_depth_relationship')
         wfr.characterize_exposure_dose_depth_relationship(plot_figs=True,
                                                           save_type=save_type,
                                                           )
         wfr.merge_exposure_doses_to_process_depths(export=True)
     else:
         Output.delete("1.0", "end")
-        Output.insert('1.0', 'Plots exposure dose depth relationship err:- Step 4 not completed')
+        Output.insert('1.0', 'characterize_exposure_dose_depth_relationship err:- Step 4 not completed')
+        tk.messagebox.showerror("characterize_exposure_dose_depth_relationship err:",
+                                "You scrwed up" + '\n'
+                                + 'Step 4 not completed'
+                                )
 
 # ---
 
@@ -704,7 +775,7 @@ def correct_grayscale_design_profile():
     if wfr!=False:
         try:
             Output.delete("1.0", "end")
-            Output.insert('1.0', 'Plots correct gray scale design')
+            Output.insert('1.0', 'correct_grayscale_design_profile')
             z_standoff_design = 1
             wfr.correct_grayscale_design_profile(z_standoff=z_standoff_design,
                                                  plot_figs=True,
@@ -712,10 +783,18 @@ def correct_grayscale_design_profile():
                                                  )
         except:
             Output.delete("1.0", "end")
-            Output.insert('1.0', 'Plots correct gray scale design err:- Run first: Plots exposure dose depth relationship')
+            Output.insert('1.0', 'correct_grayscale_design_profile err:- Run first: characterize_exposure_dose_depth_relationship')
+            tk.messagebox.showerror("characterize_exposure_dose_depth_relationship err:",
+                                    "You scrwed up" + '\n'
+                                    + 'Run first: characterize_exposure_dose_depth_relationship'
+                                    )
     else:
         Output.delete("1.0", "end")
         Output.insert('1.0', 'Plots correct gray scale design err:- Step 4 not completed')
+        tk.messagebox.showerror("characterize_exposure_dose_depth_relationship err:",
+                                "You scrwed up" + '\n'
+                                + 'Step 4 not completed'
+                                )
 # ---
 
 """
@@ -725,12 +804,16 @@ which step in the process flow is the 'Develop' step.. this variable should be d
 def plot_all_exposure_dose_to_depth():
     if wfr!=False:
         Output.delete("1.0", "end")
-        Output.insert('1.0', 'Plot all exposure, dose to depth relation ship')
+        Output.insert('1.0', 'plot_all_exposure_dose_to_depth')
         step_develop = 3
         wfr.plot_all_exposure_dose_to_depth(step=step_develop)
     else:
         Output.delete("1.0", "end")
-        Output.insert('1.0', 'Plot all exposure, dose to depth relation ship err:- Step 4 not completed')
+        Output.insert('1.0', 'plot_all_exposure_dose_to_depth err:- Step 4 not completed')
+        tk.messagebox.showerror("plot_all_exposure_dose_to_depth err:",
+                                "You scrwed up" + '\n'
+                                + 'Step 4 not completed'
+                                )
 
 # ---
 
@@ -740,12 +823,15 @@ def plot_all_exposure_dose_to_depth():
 def compare_exposure_functions():
     if wfr!=False:
         Output.delete("1.0", "end")
-        Output.insert('1.0', 'Plot figures comparing exposure functions')
+        Output.insert('1.0', 'compare_exposure_functions')
         wfr.compare_exposure_functions()
     else:
         Output.delete("1.0", "end")
-        Output.insert('1.0', 'Plot figures comparing exposure functions err:- Step 4 not completed')
-
+        Output.insert('1.0', 'compare_exposure_functions err:- Step 4 not completed')
+        tk.messagebox.showerror("compare_exposure_functions err:",
+                                "You scrwed up" + '\n'
+                                + 'Step 4 not completed'
+                                )
 # ---
 
 """
@@ -754,11 +840,15 @@ def compare_exposure_functions():
 def plot_feature_evolution():
     if wfr != False:
         Output.delete("1.0", "end")
-        Output.insert('1.0', 'Plot features at each process')
+        Output.insert('1.0', 'plot_feature_evolution')
         wfr.plot_feature_evolution(px='r', py='z', save_fig=True)
     else:
         Output.delete("1.0", "end")
-        Output.insert('1.0', 'Plot features at each process err:- Step 4 not completed')
+        Output.insert('1.0', 'plot_feature_evolution err:- Step 4 not completed')
+        tk.messagebox.showerror("compare_exposure_functions err:",
+                                "You scrwed up" + '\n'
+                                + 'Step 4 not completed'
+                                )
 # ---
 
 """
@@ -767,11 +857,15 @@ def plot_feature_evolution():
 def compare_target_to_feature_evolution():
     if wfr != False:
         Output.delete("1.0", "end")
-        Output.insert('1.0', 'Plot figures comparing target profile to features at each process')
+        Output.insert('1.0', 'compare_target_to_feature_evolution')
         wfr.compare_target_to_feature_evolution(px='r', py='z', save_fig=True)
     else:
         Output.delete("1.0", "end")
-        Output.insert('1.0', 'Plot figures comparing target profile to features at each process err:- Step 4 not completed')
+        Output.insert('1.0', 'compare_target_to_feature_evolution err:- Step 4 not completed')
+        tk.messagebox.showerror("compare_target_to_feature_evolution err:",
+                                "You scrwed up" + '\n'
+                                + 'Step 4 not completed'
+                                )
 # ---
 
 """
@@ -784,7 +878,7 @@ def plot_overlay_feature_and_exposure_profiles():
     if wfr != False:
         Output.delete("1.0", "end")
         step = max(wfr.list_steps)
-        Output.insert('1.0', 'Plot figure of design and feature profile at step: '+str(step))
+        Output.insert('1.0', 'plot_overlay_feature_and_exposure_profiles: '+str(step))
         for did in wfr.dids:
             plotting.plot_overlay_feature_and_exposure_profiles(gcw=wfr, step=step, did=did,
                                                                 path_save=join(wfr.path_results, 'figs'),
@@ -792,7 +886,11 @@ def plot_overlay_feature_and_exposure_profiles():
                                                                 )
     else:
         Output.delete("1.0", "end")
-        Output.insert('1.0', 'Plot figures comparing target profile to features at each process err:- Step 4 not completed')
+        Output.insert('1.0', 'plot_overlay_feature_and_exposure_profiles err:- Step 4 not completed')
+        tk.messagebox.showerror("plot_overlay_feature_and_exposure_profiles err:",
+                                "You scrwed up" + '\n'
+                                + 'Step 4 not completed'
+                                )
 # ---
 
 """
@@ -802,11 +900,15 @@ doesn't really give any meaningful information right now. It needs to be upgrade
 def grade_profile_accuracy():
     if wfr != False:
         Output.delete("1.0", "end")
-        Output.insert('1.0', 'Plot accuracy of feature profile')
+        Output.insert('1.0', 'grade_profile_accuracy')
         wfr.grade_profile_accuracy(step=max(wfr.list_steps), target_radius=target_radius, target_depth=target_depth_profile)
     else:
         Output.delete("1.0", "end")
-        Output.insert('1.0', 'Plot accuracy of feature profile err:- Step 4 not completed')
+        Output.insert('1.0', 'grade_profile_accuracy err:- Step 4 not completed')
+        tk.messagebox.showerror("grade_profile_accuracy err:",
+                                "You scrwed up" + '\n'
+                                + 'Step 4 not completed'
+                                )
 
 # ---
 
@@ -872,13 +974,17 @@ if __name__ == '__main__':
     save_type_Label = tk.Label(root, text="save_type (str)", font=('Helvetica', letter_size))
     save_type_Label.place(x=10, y=path_results_Txt.winfo_y() + path_results_Txt.winfo_height())
     root.update()
-    save_type_Txt = tk.Text(root, width=10,height=1, font=("Helvetica", letter_size))
-    save_type_Txt.place(x=save_type_Label.winfo_x() + save_type_Label.winfo_width() + 20, y=save_type_Label.winfo_y())
+    options = ['.png', '.svg']
+    save_type_tkvar = tk.StringVar()
+    save_type_tkvar.set('.png')
+    save_type_Drop = tk.OptionMenu(root, save_type_tkvar, *options)
+    save_type_Drop.place(x=path_results_Label.winfo_x() + path_results_Label.winfo_width() + 5,
+                                 y=save_type_Label.winfo_y())
     root.update()
 
     # Read processflow buton lauches the functionio.read_processflow
     readProces_Button = tk.Button(root, text="Read process flow", font=('Helvetica', 8), command=lambda: read_processFlow())
-    readProces_Button.place(x=10, y=save_type_Txt.winfo_y() + save_type_Txt.winfo_height() + 5)
+    readProces_Button.place(x=10, y=save_type_Drop.winfo_y() + save_type_Drop.winfo_height() + 5)
     root.update()
 
     ################## Step 2 ############################################
@@ -933,19 +1039,19 @@ if __name__ == '__main__':
         y=target_depth_profile_Label.winfo_y())
     root.update()
     # design_spacing: not important yet.
-    design_spacing_Label = tk.Label(root, text="design_spacing (int)", font=("Helvetica", letter_size))
-    design_spacing_Label.place(x=step2Label.winfo_x(),
-                          y=target_depth_profile_Txt.winfo_y() + target_depth_profile_Txt.winfo_height())  # Apply volt button data button
-    root.update()
-    design_spacing_Txt = tk.Text(root, width=10,height=1, font=("Helvetica", letter_size))
-    design_spacing_Txt.place(x=design_spacing_Label.winfo_x() + design_spacing_Label.winfo_width() + 10,
-                        y=design_spacing_Label.winfo_y())
-    root.update()
+    #design_spacing_Label = tk.Label(root, text="design_spacing (int)", font=("Helvetica", letter_size))
+    #design_spacing_Label.place(x=step2Label.winfo_x(),
+    #                      y=target_depth_profile_Txt.winfo_y() + target_depth_profile_Txt.winfo_height())  # Apply volt button data button
+    #root.update()
+    #design_spacing_Txt = tk.Text(root, width=10,height=1, font=("Helvetica", letter_size))
+    #design_spacing_Txt.place(x=design_spacing_Label.winfo_x() + design_spacing_Label.winfo_width() + 10,
+    #                    y=design_spacing_Label.winfo_y())
+    #root.update()
 
     # dose_lbls: A string that identifies which exposure setting (dose) this data belongs to.
     dose_lbls_Label = tk.Label(root, text="dose_lbls array(str)", font=("Helvetica", letter_size))
     dose_lbls_Label.place(x=step2Label.winfo_x(),
-                           y=design_spacing_Txt.winfo_y() + design_spacing_Txt.winfo_height())  # Apply volt button data button
+                           y=target_depth_profile_Txt.winfo_y() + target_depth_profile_Txt.winfo_height())  # Apply volt button data button
     root.update()
     dose_lbls_Txt = tk.Text(root, width=10,height=1, font=("Helvetica", letter_size))
     dose_lbls_Txt.place(x=dose_lbls_Label.winfo_x() + dose_lbls_Label.winfo_width() + 10,
@@ -991,16 +1097,16 @@ if __name__ == '__main__':
     step3Label.place(x=step2Label.winfo_x()+step2Label.winfo_width()+10, y=10)
     root.update()
 
-    # target_radius: (units: microns) defines the radial distance of our target profile.
+    # Dropdown toogle of the used profilometers
     options = ['KLATencor-P7', 'Dektak']
-    clicked = tk.StringVar()
-    clicked.set('KLATencor-P7')
-    profilometry_tool_Drop = tk.OptionMenu(root, clicked, *options)
+    profilo_tool = tk.StringVar()
+    profilo_tool.set('KLATencor-P7')
+    profilometry_tool_Drop = tk.OptionMenu(root, profilo_tool, *options)
     profilometry_tool_Drop.place(x=step3Label.winfo_x() ,
                                  y=step3Label.winfo_y()+step3Label.winfo_height())
     root.update()
     profilometry_tool_Button = tk.Button(root, text="profilometry_tool (str)", font=('Helvetica', letter_size),
-                                         command=lambda: slect_profilometry(clicked.get(), wafer_step3, letter_size, title_size))
+                                         command=lambda: slect_profilometry(profilo_tool.get(), wafer_step3, letter_size, title_size))
     profilometry_tool_Button.place(x=step3Label.winfo_x(),
                                    y=profilometry_tool_Drop.winfo_y()+profilometry_tool_Drop.winfo_height() )
     root.update()
@@ -1133,21 +1239,21 @@ if __name__ == '__main__':
     root.update()
 
 
-    features_of_interest_Button = tk.Button(root, text="Plot features of interst", font=('Helvetica', letter_size),
-                                            command=lambda: plot_exposure_profile())
-    features_of_interest_Button.place(x=plot_width_rel_target_radius_Label.winfo_x(),
-                            y=step5Label.winfo_y() + step5Label.winfo_height() + 5)
+    plot_exposure_profile_Button = tk.Button(root, text="plot_exposure_profile", font=('Helvetica', letter_size),
+                                             command=lambda: plot_exposure_profile())
+    plot_exposure_profile_Button.place(x=plot_width_rel_target_radius_Label.winfo_x(),
+                                       y=step5Label.winfo_y() + step5Label.winfo_height() + 5)
     root.update()
-    features_of_interest_Txt = tk.Text(root, width=10,height=1, font=("Helvetica", letter_size))
-    features_of_interest_Txt.place(
-        x=features_of_interest_Button.winfo_x() + features_of_interest_Button.winfo_width() + 5,
-        y=features_of_interest_Button.winfo_y()+5)
+    plot_exposure_profile_Txt = tk.Text(root, width=10, height=1, font=("Helvetica", letter_size))
+    plot_exposure_profile_Txt.place(
+        x=plot_exposure_profile_Button.winfo_x() + plot_exposure_profile_Button.winfo_width() + 5,
+        y=plot_exposure_profile_Button.winfo_y() + 5)
     root.update()
 
     # photoresist thickness, this variable could be interpreted from process_flow or inputted here.
-    thickness_PR_Label = tk.Label(root, text="Photoresist thickness", font=('Helvetica', letter_size))
+    thickness_PR_Label = tk.Label(root, text="thickness_PR", font=('Helvetica', letter_size))
     thickness_PR_Label.place(x=plot_width_rel_target_radius_Label.winfo_x(),
-                             y=features_of_interest_Button.winfo_y() + features_of_interest_Button.winfo_height() + 5)
+                             y=plot_exposure_profile_Button.winfo_y() + plot_exposure_profile_Button.winfo_height() + 5)
     root.update()
     thickness_PR_Txt = tk.Text(root, width=10,height=1, font=("Helvetica", letter_size))
     thickness_PR_Txt.place(
@@ -1156,7 +1262,7 @@ if __name__ == '__main__':
     root.update()
 
     # the thickness of photoresist protecting your wafer outside of your target profile.
-    thickness_PR_budget_Label = tk.Label(root, text="Proteceing photoresist", font=('Helvetica', letter_size))
+    thickness_PR_budget_Label = tk.Label(root, text="plot_width_rel_target_radius", font=('Helvetica', letter_size))
     thickness_PR_budget_Label.place(x=plot_width_rel_target_radius_Label.winfo_x(),
                              y=thickness_PR_Label.winfo_y() + thickness_PR_Label.winfo_height() + 5)
     root.update()
@@ -1167,7 +1273,7 @@ if __name__ == '__main__':
     root.update()
 
     # the radial distance (microns) over which the mean peak height (depth) is calculated.
-    r_target_Label = tk.Label(root, text='Radius to peak hight', font=('Helvetica', letter_size))
+    r_target_Label = tk.Label(root, text='r_target', font=('Helvetica', letter_size))
     r_target_Label.place(x=plot_width_rel_target_radius_Label.winfo_x(),
                                     y=thickness_PR_budget_Label.winfo_y() + thickness_PR_budget_Label.winfo_height() + 5)
     root.update()
@@ -1178,14 +1284,14 @@ if __name__ == '__main__':
     root.update()
 
      # Button to initialize process
-    backout_process_to_achieve_target_Button = tk.Button(root, text="Estimate photoresist process",
+    backout_process_to_achieve_target_Button = tk.Button(root, text="backout_process_to_achieve_target",
                                                          font=('Helvetica', letter_size),
-                                                         command=lambda: plot_exposure_profile())
+                                                         command=lambda: backout_process_to_achieve_target())
     backout_process_to_achieve_target_Button.place(x=plot_width_rel_target_radius_Label.winfo_x(),
                                                    y=r_target_Label.winfo_y() + r_target_Label.winfo_height() + 5)
     root.update()
     #  'compare_target_to_feature_evolution': plot figures comparing target profile to features at each process.
-    comp_target_to_feature_Button = tk.Button(root, text="Profilometry data vs target", font=('Helvetica', letter_size),
+    comp_target_to_feature_Button = tk.Button(root, text="comp_target_to_feature", font=('Helvetica', letter_size),
                                               command=lambda: compare_target_to_feature_evolution())
     comp_target_to_feature_Button.place(x=plot_width_rel_target_radius_Label.winfo_x(),
                                         y=backout_process_to_achieve_target_Button.winfo_y() + backout_process_to_achieve_target_Button.winfo_height() + 5)
@@ -1193,55 +1299,55 @@ if __name__ == '__main__':
 
     # 'characterize_exposure_dose_depth_relationship' calculates the relationship between exposure intensity (mJ) and
     # photoresist depth (microns). 'z_standoff_measure
-    char_exposure_dose_depth_Button = tk.Button(root, text="Plots exposure dose depth relationship", font=('Helvetica', letter_size),
-                                                command=lambda: characterize_exposure_dose_depth_relationship())
-    char_exposure_dose_depth_Button.place(x=comp_target_to_feature_Button.winfo_x(),
-                                        y=comp_target_to_feature_Button.winfo_y() + comp_target_to_feature_Button.winfo_height() + 5)
+    characterize_exposure_dose_depth_relationship_Button = tk.Button(root, text="characterize_exposure_dose_depth_relationship", font=('Helvetica', letter_size),
+                                                                     command=lambda: characterize_exposure_dose_depth_relationship())
+    characterize_exposure_dose_depth_relationship_Button.place(x=comp_target_to_feature_Button.winfo_x(),
+                                                               y=comp_target_to_feature_Button.winfo_y() + comp_target_to_feature_Button.winfo_height() + 5)
     root.update()
 
     # This function can only be run after running 'characterize_exposure_dose_depth_relationship' first.
     #
     # 'correct_grayscale_design_profile' redraws your grayscale map (r-coordinate and layer), according to the characterized
     # exposure_dose-to-depth relationship, to achieve your target profile.
-    cor_grayscale_des_prof_Button = tk.Button(root, text="Plots correct gray scale design",
-                                              font=('Helvetica', letter_size),
-                                              command=lambda: correct_grayscale_design_profile())
-    cor_grayscale_des_prof_Button.place(x=char_exposure_dose_depth_Button.winfo_x(),
-                                          y=char_exposure_dose_depth_Button.winfo_y() + char_exposure_dose_depth_Button.winfo_height() + 5)
+    correct_grayscale_design_profile_Button = tk.Button(root, text="correct_grayscale_design_profile",
+                                                        font=('Helvetica', letter_size),
+                                                        command=lambda: correct_grayscale_design_profile())
+    correct_grayscale_design_profile_Button.place(x=characterize_exposure_dose_depth_relationship_Button.winfo_x(),
+                                                  y=characterize_exposure_dose_depth_relationship_Button.winfo_y() + characterize_exposure_dose_depth_relationship_Button.winfo_height() + 5)
     root.update()
 
     # Plot exposure, dose to depth relation ship
     # 'plot_all_exposure_dose_to_depth': plot figure showing exposure dose to depth relationship. 'step_develop' indicates
     # which step in the process flow is the 'Develop' step.. this variable should be deprecated.
-    all_exp_dose_to_depth_Button = tk.Button(root, text="Plots all exposure dose depth relationship",
-                                             font=('Helvetica', letter_size),
-                                             command=lambda: plot_all_exposure_dose_to_depth())
-    all_exp_dose_to_depth_Button.place(x=cor_grayscale_des_prof_Button.winfo_x(),
-                                          y=cor_grayscale_des_prof_Button.winfo_y() + cor_grayscale_des_prof_Button.winfo_height() + 5)
+    plot_all_exposure_dose_to_depth_Button = tk.Button(root, text="plot_all_exposure_dose_to_depth",
+                                                       font=('Helvetica', letter_size),
+                                                       command=lambda: plot_all_exposure_dose_to_depth())
+    plot_all_exposure_dose_to_depth_Button.place(x=correct_grayscale_design_profile_Button.winfo_x(),
+                                                 y=correct_grayscale_design_profile_Button.winfo_y() + correct_grayscale_design_profile_Button.winfo_height() + 5)
     root.update()
 
     #compare_exposure_functions 'compare_exposure_functions': plot figures comparing exposure functions.
-    compare_exposure_functions_Button = tk.Button(root, text="Plot figures comparing exposure functions",
+    compare_exposure_functions_Button = tk.Button(root, text="compare_exposure_functions",
                                              font=('Helvetica', letter_size),
                                              command=lambda: compare_exposure_functions())
-    compare_exposure_functions_Button.place(x=cor_grayscale_des_prof_Button.winfo_x(),
-                                       y=all_exp_dose_to_depth_Button.winfo_y() + all_exp_dose_to_depth_Button.winfo_height() + 5)
+    compare_exposure_functions_Button.place(x=correct_grayscale_design_profile_Button.winfo_x(),
+                                            y=plot_all_exposure_dose_to_depth_Button.winfo_y() + plot_all_exposure_dose_to_depth_Button.winfo_height() + 5)
     root.update()
 
     # plot_feature_evolution 'plot_feature_evolution': plot features at each process.
-    plot_feature_evolution_Button = tk.Button(root, text="Plot features at each process",
+    plot_feature_evolution_Button = tk.Button(root, text="plot_feature_evolution",
                                                   font=('Helvetica', letter_size),
                                                   command=lambda: plot_feature_evolution())
-    plot_feature_evolution_Button.place(x=cor_grayscale_des_prof_Button.winfo_x(),
-                                            y=compare_exposure_functions_Button.winfo_y() + compare_exposure_functions_Button.winfo_height() + 5)
+    plot_feature_evolution_Button.place(x=correct_grayscale_design_profile_Button.winfo_x(),
+                                        y=compare_exposure_functions_Button.winfo_y() + compare_exposure_functions_Button.winfo_height() + 5)
     root.update()
 
     # 'compare_target_to_feature_evolution': plot figures comparing target profile to features at each process.
-    compare_target_to_feature_evolution_Button = tk.Button(root, text="Plot figures comparing target profile to features at each process",
+    compare_target_to_feature_evolution_Button = tk.Button(root, text="compare_target_to_feature_evolution",
                                               font=('Helvetica', letter_size),
                                               command=lambda: compare_target_to_feature_evolution())
-    compare_target_to_feature_evolution_Button.place(x=cor_grayscale_des_prof_Button.winfo_x(),
-                                        y=plot_feature_evolution_Button.winfo_y() + plot_feature_evolution_Button.winfo_height() + 5)
+    compare_target_to_feature_evolution_Button.place(x=correct_grayscale_design_profile_Button.winfo_x(),
+                                                     y=plot_feature_evolution_Button.winfo_y() + plot_feature_evolution_Button.winfo_height() + 5)
     root.update()
 
     # 'plot_overlay_feature_and_exposure_profiles': plot figure showing your design profile and feature profile for a
@@ -1249,20 +1355,20 @@ if __name__ == '__main__':
     #
     # 'did' is short for Design ID.
     plot_overlay_feature_and_exposure_profiles_Button = tk.Button(root,
-                                                           text="Plot figure of design and feature profile at step",
+                                                           text="plot_overlay_feature_and_exposure_profiles",
                                                            font=('Helvetica', letter_size),
                                                            command=lambda: plot_overlay_feature_and_exposure_profiles())
-    plot_overlay_feature_and_exposure_profiles_Button.place(x=cor_grayscale_des_prof_Button.winfo_x(),
-                                                     y=compare_target_to_feature_evolution_Button.winfo_y() + compare_target_to_feature_evolution_Button.winfo_height() + 5)
+    plot_overlay_feature_and_exposure_profiles_Button.place(x=correct_grayscale_design_profile_Button.winfo_x(),
+                                                            y=compare_target_to_feature_evolution_Button.winfo_y() + compare_target_to_feature_evolution_Button.winfo_height() + 5)
     root.update()
 
     # 'grade_profile_accuracy': Grade the accuracy of your feature profile against your target profile. *Note, this function
     # doesn't really give any meaningful information right now. It needs to be upgraded.
-    grade_profile_accuracy_Button = tk.Button(root,text="Plot accuracy of feature profile",
+    grade_profile_accuracy_Button = tk.Button(root,text="grade_profile_accuracy",
                                                    font=('Helvetica', letter_size),
                                                 command=lambda: grade_profile_accuracy())
-    grade_profile_accuracy_Button.place(x=cor_grayscale_des_prof_Button.winfo_x(),
-                                            y=plot_overlay_feature_and_exposure_profiles_Button.winfo_y() + plot_overlay_feature_and_exposure_profiles_Button.winfo_height() + 5)
+    grade_profile_accuracy_Button.place(x=correct_grayscale_design_profile_Button.winfo_x(),
+                                        y=plot_overlay_feature_and_exposure_profiles_Button.winfo_y() + plot_overlay_feature_and_exposure_profiles_Button.winfo_height() + 5)
     root.update()
 
 
@@ -1273,7 +1379,6 @@ if __name__ == '__main__':
     base_path_Txt.insert('1.0', path+'\Wafer')
     fn_pflow_Txt.insert('1.0', 'process-flow_w')
     path_results_Txt.insert('1.0', 'results')
-    save_type_Txt.insert('1.0', 'png')
     # Step 2 initialisations
     design_lbls_Txt.insert('1.0','erf3,Lr')
     design_ids_Txt.insert('1.0','0,1')
@@ -1284,6 +1389,18 @@ if __name__ == '__main__':
     target_lbls_Txt.insert('1.0','None,None')
     design_locs_Txt.insert('1.0','0,20e3,0,-20e3')
     fem_dxdy_Txt.insert('1.0','10e3,10e3')
+    ########### Step 4 ###############
+    peak_rel_height_Txt.insert('1.0','0.975')
+    downsample_Txt.insert('1.0','5')
+    width_rel_radius_Txt.insert('1.0','0.01')
+    prominence_Txt.insert('1.0','1')
+    fit_func_Txt.insert('1.0','parabola')
+    plot_width_rel_target_radius_Txt.insert('1.0','1.2')
+    #############Step 5 ########
+    plot_exposure_profile_Txt.insert('1.0','a1_erf3,b1_erf3,a1_Lr,b1_Lr')
+    thickness_PR_Txt.insert('1.0','7.5')
+    thickness_PR_budget_Txt.insert('1.0','1.5')
+    r_target_Txt.insert('1.0','20')
     #Step 3 initalisations
     # # Read processflow buton lauches the functionio.read_processflow
     # readProces = tk.Button(root, text="Read process flow", font=('calbiri', 11), command=lambda: read_processFlow())
@@ -1306,8 +1423,8 @@ if __name__ == '__main__':
     root.update()
 
     # #The figure on the user interface window#
-    fig = plt.figure(figsize=(3.5,3.5))
-    plot1 = fig.add_subplot(111)
+    fig1 = plt.figure(figsize=(3.5,3.5))
+    plot1 = fig1.add_subplot(111)
     xCirc = [50.8*np.cos(x) for x in np.linspace(0, 2*np.pi, 500)]
     yCirc = [50.8*np.sin(x) for x in np.linspace(0, 2*np.pi, 500)]
     # plot1.set_title('Serial Data')
@@ -1318,8 +1435,8 @@ if __name__ == '__main__':
     plot1.grid()
     # creating the Tkinter canvas
     # containing the Matplotlib figure
-    canvas = FigureCanvasTkAgg(fig,master=root)
-    canvas.get_tk_widget().place(x=step2Label.winfo_x(), y=initFeaturesDesigns_Button.winfo_y() + initFeaturesDesigns_Button.winfo_height() +25)
+    canvas = FigureCanvasTkAgg(fig1,master=root)
+    canvas.get_tk_widget().place(x=step2Label.winfo_x(), y=downsample_Txt.winfo_y() + downsample_Txt.winfo_height() +5)
     canvas.draw()
     toolbar = NavigationToolbar2Tk(canvas,root)
     toolbar.update()
