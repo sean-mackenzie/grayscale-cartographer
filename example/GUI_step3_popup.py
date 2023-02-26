@@ -158,106 +158,113 @@ def slect_profilometry(profilometry_tool,wafer_step3,letter_size,title_size):
     filetype_write_misc_Txt.place(x=filetype_write_misc_Label.winfo_x() + filetype_write_misc_Label.winfo_width() + 5,
                                y=headr_misc_Label.winfo_y())
     profilo_window.update()
-    def load_parameters():
-        # Allow user to select a directory and store it in global var
-        # called folder_path
-        path = str(Path.cwd())
-        try:
-            file = tk.filedialog.askopenfile(initialdir=path,
-                                            title='Select a file',
-                                            mode='r',
-                                            filetypes=[('Excel file', '*.xlsx'),('CSV Files','*.csv')])
-            if file:
-               parameters_path=file.name
-               load_parameters_Text.insert('1.0',parameters_path.rpartition('/')[2])
 
-        except:
-            tk.messagebox.showwarning("showwarning", "Pleas select a CSV of XLSX file")
-
-        try:
-            parameters = pd.read_excel(parameters_path) ## seheet_name='Measurement_methods' net tim
-        except:
-            pass
-        try:
-            parameters = pd.read_excel(parameters_path)
-        except:
-            pass
-        try:
-            data_profile_list = parameters['data_profile'].to_list()
-            data_etch_monitor_list = parameters['data_etch_monitor'].to_list()
-            data_optical_list = parameters['data_optical'].to_list()
-            data_misc = parameters['data_misc'].to_list()
-            # Profilometry
-            filetype_read_Txt.insert("1.0",data_profile_list[0])
-            x_units_read_Txt.insert('1.0',data_profile_list[1])
-            y_units_read_Txt.insert('1.0',data_profile_list[2])
-            filetype_write_Txt.insert('1.0',data_profile_list[3])
-            x_units_write_Txt.insert('1.0',data_profile_list[4])
-            y_units_write_Txt.insert('1.0',data_profile_list[5])
-            # Data etch monitor
-            header_etch_moitor_Txt.insert('1.0',data_etch_monitor_list[0])
-            filetype_read_etcher_Txt.insert('1.0',data_etch_monitor_list[1])
-            filetype_write_etcher_Txt.insert('1.0',data_etch_monitor_list[2])
-            # Data Optical
-            header_optical_Txt.insert('1.0', data_optical_list[0])
-            filetype_read_optical_Txt.insert('1.0', data_optical_list[1])
-            filetype_write_optical_Txt.insert('1.0', data_optical_list[2])
-            # Data Misceallenouse
-            header_misc_Txt.insert('1.0', data_misc[0])
-            filetype_read_misc_Txt.insert('1.0', data_misc[1])
-            filetype_write_misc_Txt.insert('1.0', data_misc[2])
-        except:
-            tk.messagebox.showwarning("showwarning", "No file selected")
+    ##### initial profilometry tool file load #####
+    path = str(Path.cwd())
+    parameters_path = path + '/software/profilometry_tools.xlsx'
+    try:
+        parameters = pd.read_excel(parameters_path)  ## seheet_name='Measurement_methods' net tim
+    except:
+        pass
+    try:
+        parameters = pd.read_excel(parameters_path)
+    except:
+        pass
+    try:
+        data_profile_list = parameters[profilometry_tool].to_list()
+        data_etch_monitor_list = parameters['data_etch_monitor'].to_list()
+        data_optical_list = parameters['data_optical'].to_list()
+        data_misc = parameters['data_misc'].to_list()
+        # Profilometry
+        filetype_read_Txt.insert("1.0", data_profile_list[0])
+        x_units_read_Txt.insert('1.0', data_profile_list[1])
+        y_units_read_Txt.insert('1.0', data_profile_list[2])
+        filetype_write_Txt.insert('1.0', data_profile_list[3])
+        x_units_write_Txt.insert('1.0', data_profile_list[4])
+        y_units_write_Txt.insert('1.0', data_profile_list[5])
+        # Data etch monitor
+        header_etch_moitor_Txt.insert('1.0', data_etch_monitor_list[0])
+        filetype_read_etcher_Txt.insert('1.0', data_etch_monitor_list[1])
+        filetype_write_etcher_Txt.insert('1.0', data_etch_monitor_list[2])
+        # Data Optical
+        header_optical_Txt.insert('1.0', data_optical_list[0])
+        filetype_read_optical_Txt.insert('1.0', data_optical_list[1])
+        filetype_write_optical_Txt.insert('1.0', data_optical_list[2])
+        # Data Misceallenouse
+        header_misc_Txt.insert('1.0', data_misc[0])
+        filetype_read_misc_Txt.insert('1.0', data_misc[1])
+        filetype_write_misc_Txt.insert('1.0', data_misc[2])
+    except:
+        tk.messagebox.showwarning("showwarning", "profilometry_tools.xlsx is wrong load manually")
 
     def quit():
+        parameters = pd.read_excel(parameters_path)
         ### getting the data and convert intot the talbe that we want to have
         filetype_read = filetype_read_Txt.get("1.0",'end-1c')
+        parameters._set_value(0,profilometry_tool,filetype_read)
         x_units_read = x_units_read_Txt.get("1.0",'end-1c')
         x_units_read_err = ''
         if x_units_read.replace('.', '', 1).replace('e', '', 1).replace('-', '', 1).isdigit():
             x_units_read = float(x_units_read)
         else:
             x_units_read_err = x_units_read + ' is not a float'
+        parameters._set_value(1,profilometry_tool,x_units_read)
         y_units_read = y_units_read_Txt.get("1.0",'end-1c')
         y_units_read_err = ''
         if y_units_read.replace('.', '', 1).replace('e', '', 1).replace('-', '', 1).isdigit():
             y_units_read = float(y_units_read)
         else:
             y_units_read_err = y_units_read + ' is not a float'
+        parameters._set_value(2,profilometry_tool,y_units_read)
+
         filetype_write = filetype_write_Txt.get("1.0",'end-1c')
+        parameters._set_value(3,profilometry_tool,filetype_write)
         x_units_write = x_units_read_Txt.get("1.0",'end-1c')
         x_units_write_err = ''
         if x_units_write.replace('.', '', 1).replace('e', '', 1).replace('-', '', 1).isdigit():
             x_units_write = float(x_units_write)
         else:
             x_units_write_err = x_units_write + ' is not a float'
+        parameters._set_value(4,profilometry_tool,x_units_write)
+
         y_units_write = y_units_write_Txt.get("1.0",'end-1c')
         y_units_write_err = ''
         if y_units_write.replace('.', '', 1).replace('e', '', 1).replace('-', '', 1).isdigit():
             y_units_write = float(y_units_write)
         else:
             y_units_write_err = y_units_read + ' is not a float'
-
+        parameters._set_value(5,profilometry_tool, y_units_write)
         data_profile = {'header': profilometry_tool,
                         'filetype_read': '.' + filetype_read, 'x_units_read': x_units_read,
                         'y_units_read': y_units_read,
                         'filetype_write': '.' + filetype_write, 'x_units_write': x_units_write,
                         'y_units_write': y_units_write,
                         }
+        # Data etch moniotr
         header_etch_moitor = header_etch_moitor_Txt.get("1.0",'end-1c')
+        parameters._set_value(0,'data_etch_monitor',header_etch_moitor)
         filetype_read_etcher = filetype_read_etcher_Txt.get("1.0",'end-1c')
+        parameters._set_value(1,'data_etch_monitor',filetype_read_etcher)
         filetype_write_etcher = filetype_write_etcher_Txt.get("1.0",'end-1c')
+        parameters._set_value(2,'data_etch_monitor', filetype_write_etcher)
         data_etch_monitor = {'header': header_etch_moitor, 'filetype_read': '.' + filetype_read_etcher,
                              'filetype_write': '.' + filetype_write_etcher}
-
+        # Data optical
         headr_optical = header_optical_Txt.get("1.0",'end-1c')
+        parameters._set_value(0,'data_optical',headr_optical)
         filetype_read_optical = filetype_read_optical_Txt.get("1.0",'end-1c')
+        parameters._set_value(1,'data_optical',filetype_read_optical)
         filetype_write_optical = filetype_write_optical_Txt.get("1.0",'end-1c')
+        parameters._set_value(2,'data_optical',filetype_write_optical)
         data_optical = {'header': headr_optical, 'filetype_read': '.' + filetype_read_optical,
                         'filetype_write': '.' + filetype_write_optical}
+        # Data miscealleous
         headr_misc = header_misc_Txt.get("1.0",'end-1c')
+        parameters._set_value(0,'data_misc',headr_misc)
         filetype_read_misc = filetype_read_misc_Txt.get("1.0",'end-1c')
+        parameters._set_value(1,'data_misc',filetype_read_misc)
         filetype_write_misc = filetype_write_misc_Txt.get("1.0",'end-1c')
+        parameters._set_value(2,'data_misc',filetype_write_misc)
         data_misc = {'header': headr_misc, 'filetype_read': '.' + filetype_read_misc,
                      'filetype_write': '.' + filetype_write_misc}
         measurement_methods = {'Profilometry': data_profile,
@@ -265,6 +272,7 @@ def slect_profilometry(profilometry_tool,wafer_step3,letter_size,title_size):
                                'Optical': data_optical,
                                'Misc': data_misc,
                                }
+        parameters.to_excel(parameters_path)
         measurement_methods_err = {'x_units_read_err': x_units_read_err, 'y_units_read_err': y_units_read_err,
                                    'x_units_write_err': x_units_write_err, 'y_units_write_err': y_units_write_err}
         wafer_step3.update_meas_metods(new_measurement_methods=measurement_methods,new_measurement_methods_err=measurement_methods_err)

@@ -2,6 +2,7 @@ from os.path import join
 import tkinter as tk  # tkinter for GUI
 
 import numpy as np
+import pandas as pd
 
 from graycart.GraycartWafer import GraycartWafer
 from graycart.GraycartFeature import initialize_designs, initialize_design_features
@@ -74,11 +75,15 @@ def browse_button():
                                      filetypes=[('Excel file', '*.xlsx'), ('CSV Files', '*.csv')])
     if file:
         base_path = file.name.rpartition('/')[0]
+        base_path_Txt.delete('1.0', 'end')
         base_path_Txt.insert('1.0', base_path)
         fn_pflow=file.name.rpartition('/')[2]
+        fn_pflow_Txt.delete('1.0','end')
+        fn_pflow_Txt.insert('1.0',fn_pflow)
         Output.delete("1.0", "end")
         Output.insert('1.0','base path set to'+base_path+'\n'
                       +'Proseflow file selected:- '+fn_pflow+'\n')
+        root.update()
 
 #
 # functions
@@ -92,8 +97,11 @@ def read_processFlow():
     fn_pflow_err = ''
     try:
         wid = int(wid_Txt.get('1.0', 'end-1c'))
-        fn_pflow = fn_pflow_Txt.get('1.0', 'end-1c') + '{}.xlsx'.format(wid)
     except:
+        wid = wid_Txt.get('1.0', 'end-1c')
+        tk.messagebox.showwarning("Wafer ID warning:",
+                                "Wafer ID is not int" + '\n'
+                                )
         wid_err = 'Wafer ID is not int'
     path_results = path_results_Txt.get('1.0', 'end-1c')
     save_type = save_type_tkvar.get()
@@ -180,10 +188,12 @@ def init_featuresDesigns():
     global features
 
     global target_radius
+    global  target_radius_err
     target_radius_err = ''
     global target_lbls
     target_lbls_err = ''
     global target_depth_profile
+    global target_depth_profile_err
     target_depth_profile_err=''
     global design_locs
     design_locs_err = ''
@@ -233,6 +243,10 @@ def init_featuresDesigns():
         except:
             design_ids_err = "Design indices are wrongly initialized"
     target_depth_profile = target_depth_profile_Txt.get('1.0', 'end-1c')
+    if target_depth_profile.replace('.', '', 1).replace('e', '', 1).isdigit():
+        target_depth_profile = float(target_depth_profile)
+    else:
+        target_depth_profile_err = target_depth_profile + ' is not convertible to float \n'
 
     dose_lbls = dose_lbls_Txt.get('1.0', 'end-1c').replace(' ', '').split(',')
     focus_lbls = focus_lbls_Txt.get('1.0', 'end-1c').replace(' ', '').split(',')
@@ -381,47 +395,58 @@ def init_Wafer():
     measurement_methods_err = wafer_step3.measurement_methods_err
     global wfr
     if features!=False:
-        try:
-            # 5. the 'wafer' structures all of this data as a historical record of 'cause' and 'effect'
-            wfr = GraycartWafer(wid=wid,
-                                path=base_path,
-                                path_results=path_results,
-                                designs=designs,
-                                features=features,
-                                process_flow=process_flow,
-                                processes=None,
-                                measurement_methods=measurement_methods,
-                                )
-            Output.delete("1.0", "end")
-            Output.insert("1.0", 'Step 3: Wafer initalization' + '\n'
-                          + 'Wafer succesfully initialized to:' + '\n'
-                          + 'Wafer id: ' + str(wid) + '\n'
-                          + 'Base path: ' + base_path + '\n'
-                          + 'Results path: ' + path_results + '\n'
-                          + 'The process flow given at step 1: ' + '\n'
-                          + 'The designs and features given at step 2: ' + '\n'
-                          + 'Design indices ' + design_ids_Txt.get('1.0', 'end-1c') + '\n'
-                          + 'Profilometry: ' +str(measurement_methods['Profilometry'])+ '\n'
-                          + 'Etch monitor: ' +str(measurement_methods['Etch Monitor'])+'\n'
-                          + 'Optical: ' +str(measurement_methods['Optical'])+ '\n'
-                          + 'Miscellaneous: ' +str(measurement_methods['Misc'])+ '\n'
-                          )
-        except:
-            wfr = False
+        if measurement_methods!=False:
+            try:
+                # 5. the 'wafer' structures all of this data as a historical record of 'cause' and 'effect'
+                wfr = GraycartWafer(wid=wid,
+                                    path=base_path,
+                                    path_results=path_results,
+                                    designs=designs,
+                                    features=features,
+                                    process_flow=process_flow,
+                                    processes=None,
+                                    measurement_methods=measurement_methods,
+                                    )
+                Output.delete("1.0", "end")
+                Output.insert("1.0", 'Step 3: Wafer initalization' + '\n'
+                              + 'Wafer succesfully initialized to:' + '\n'
+                              + 'Wafer id: ' + str(wid) + '\n'
+                              + 'Base path: ' + base_path + '\n'
+                              + 'Results path: ' + path_results + '\n'
+                              + 'The process flow given at step 1: ' + '\n'
+                              + 'The designs and features given at step 2: ' + '\n'
+                              + 'Design indices ' + design_ids_Txt.get('1.0', 'end-1c') + '\n'
+                              + 'Profilometry: ' +str(measurement_methods['Profilometry'])+ '\n'
+                              + 'Etch monitor: ' +str(measurement_methods['Etch Monitor'])+'\n'
+                              + 'Optical: ' +str(measurement_methods['Optical'])+ '\n'
+                              + 'Miscellaneous: ' +str(measurement_methods['Misc'])+ '\n'
+                              )
+            except:
+                wfr = False
+                Output.delete("1.0", "end")
+                Output.insert("1.0", "Step 3: Wafer initalization errors:" + '\n'
+                              + "You scrwed up" + '\n'
+                              + 'Profilometry err:- ' +str(measurement_methods_err)+ '\n'
+                              + 'Etch monitor:- ' +str(measurement_methods['Etch Monitor'])+'\n'
+                              + 'Optical:- ' +str(measurement_methods['Optical'])+ '\n'
+                              + 'Miscellaneous:- ' +str(measurement_methods['Misc'])+ '\n'
+                              )
+                tk.messagebox.showerror("Step 3 errors:",
+                                        "You scrwed up" + '\n'
+                                        + 'Profilometry err:- ' + str(measurement_methods_err) + '\n'
+                                        + 'Etch monitor:- ' + str(measurement_methods['Etch Monitor']) + '\n'
+                                        + 'Optical:- ' + str(measurement_methods['Optical']) + '\n'
+                                        + 'Miscellaneous:- ' + str(measurement_methods['Misc']) + '\n'
+                                        )
+        else:
             Output.delete("1.0", "end")
             Output.insert("1.0", "Step 3: Wafer initalization errors:" + '\n'
                           + "You scrwed up" + '\n'
-                          + 'Profilometry err:- ' +str(measurement_methods_err)+ '\n'
-                          + 'Etch monitor:- ' +str(measurement_methods['Etch Monitor'])+'\n'
-                          + 'Optical:- ' +str(measurement_methods['Optical'])+ '\n'
-                          + 'Miscellaneous:- ' +str(measurement_methods['Misc'])+ '\n'
+                          + 'Initialize profilometry tool' + '\n'
                           )
             tk.messagebox.showerror("Step 3 errors:",
                                     "You scrwed up" + '\n'
-                                    + 'Profilometry err:- ' + str(measurement_methods_err) + '\n'
-                                    + 'Etch monitor:- ' + str(measurement_methods['Etch Monitor']) + '\n'
-                                    + 'Optical:- ' + str(measurement_methods['Optical']) + '\n'
-                                    + 'Miscellaneous:- ' + str(measurement_methods['Misc']) + '\n'
+                                    + 'Initialize profilometry tool'
                                     )
     else:
         wfr = False
@@ -434,7 +459,6 @@ def init_Wafer():
                                 "You scrwed up" + '\n'
                                 + 'Do step 2 first'
                                 )
-
 
 """
 4. Read, process, and evaluate the 'measurement_methods' data.
@@ -565,53 +589,49 @@ def eval_process():
         plot_width_rel_target_radius_err = plot_width_rel_target_radius + ' is not convertable to float'
 
     if wfr!=False:
-        # try:
-        # print('after try')
-        # print(save_profilometry_processing_figures)
-        # print('after try')
-        print(save_merged_profilometry_data)
-        wfr.evaluate_process_profilometry(plot_fits=save_profilometry_processing_figures,
-                                          perform_rolling_on=perform_rolling_on,
-                                          evaluate_signal_processing=evaluate_signal_processing,
-                                          plot_width_rel_target=plot_width_rel_target_radius,
-                                          peak_rel_height=peak_rel_height,
-                                          downsample=downsample,
-                                          width_rel_radius=width_rel_radius,
-                                          fit_func=fit_func,
-                                          prominence=prominence,
-                                          )
+        try:
+            wfr.evaluate_process_profilometry(plot_fits=save_profilometry_processing_figures,
+                                              perform_rolling_on=perform_rolling_on,
+                                              evaluate_signal_processing=evaluate_signal_processing,
+                                              plot_width_rel_target=plot_width_rel_target_radius,
+                                              peak_rel_height=peak_rel_height,
+                                              downsample=downsample,
+                                              width_rel_radius=width_rel_radius,
+                                              fit_func=fit_func,
+                                              prominence=prominence,
+                                              )
 
-        wfr.merge_processes_profilometry(export=save_merged_profilometry_data)
-        Output.delete("1.0", "end")
-        Output.insert("1.0", 'Step 4: Wafer initalization' + '\n'
-                      + 'Wafer succesfully evaluated with:' + '\n'
-                      + 'peak_rel_height: ' + str(peak_rel_height) + '\n'
-                      + 'downsample: ' + str(downsample) + '\n'
-                      + 'width_rel_radius: ' + str(width_rel_radius) + '\n'
-                      + 'prominence ' + str(prominence) + '\n'
-                      + 'fit_func ' + fit_func + '\n'
-                      + 'plot_width_rel_target_radius: ' + str(plot_width_rel_target_radius)+ '\n'
-                      )
-        # except:
-        #     Output.delete("1.0", "end")
-        #     Output.insert("1.0", "Step 4: Wafer evaluation errors:" + '\n'
-        #                   + "You scrwed up" + '\n'
-        #                   + 'peak_rel_height err:- ' + peak_rel_height_err + '\n'
-        #                   + 'downsample err:- ' + downsample_err + '\n'
-        #                   + 'width_rel_radius err:- ' + width_rel_radius_err + '\n'
-        #                   + 'prominence err:- ' + prominence_err + '\n'
-        #                   + 'fit_func err:- ' + fit_func_err + '\n'
-        #                   + 'plot_width_rel_target_radius err:- ' + plot_width_rel_target_radius_err + '\n'
-        #                   )
-        #     tk.messagebox.showerror("SStep 4: Wafer evaluation errors:",
-        #                             "You scrwed up" + '\n'
-        #                             + 'peak_rel_height err:- ' + peak_rel_height_err + '\n'
-        #                             + 'downsample err:- ' + downsample_err + '\n'
-        #                             + 'width_rel_radius err:- ' + width_rel_radius_err + '\n'
-        #                             + 'prominence err:- ' + prominence_err + '\n'
-        #                             + 'fit_func err:- ' + fit_func_err + '\n'
-        #                             + 'plot_width_rel_target_radius err:- ' + plot_width_rel_target_radius_err + '\n'
-        #                             )
+            wfr.merge_processes_profilometry(export=save_merged_profilometry_data)
+            Output.delete("1.0", "end")
+            Output.insert("1.0", 'Step 4: Wafer initalization' + '\n'
+                          + 'Wafer succesfully evaluated with:' + '\n'
+                          + 'peak_rel_height: ' + str(peak_rel_height) + '\n'
+                          + 'downsample: ' + str(downsample) + '\n'
+                          + 'width_rel_radius: ' + str(width_rel_radius) + '\n'
+                          + 'prominence ' + str(prominence) + '\n'
+                          + 'fit_func ' + fit_func + '\n'
+                          + 'plot_width_rel_target_radius: ' + str(plot_width_rel_target_radius)+ '\n'
+                          )
+        except:
+            Output.delete("1.0", "end")
+            Output.insert("1.0", "Step 4: Wafer evaluation errors:" + '\n'
+                          + "You scrwed up" + '\n'
+                          + 'peak_rel_height err:- ' + peak_rel_height_err + '\n'
+                          + 'downsample err:- ' + downsample_err + '\n'
+                          + 'width_rel_radius err:- ' + width_rel_radius_err + '\n'
+                          + 'prominence err:- ' + prominence_err + '\n'
+                          + 'fit_func err:- ' + fit_func_err + '\n'
+                          + 'plot_width_rel_target_radius err:- ' + plot_width_rel_target_radius_err + '\n'
+                          )
+            tk.messagebox.showerror("SStep 4: Wafer evaluation errors:",
+                                    "You scrwed up" + '\n'
+                                    + 'peak_rel_height err:- ' + peak_rel_height_err + '\n'
+                                    + 'downsample err:- ' + downsample_err + '\n'
+                                    + 'width_rel_radius err:- ' + width_rel_radius_err + '\n'
+                                    + 'prominence err:- ' + prominence_err + '\n'
+                                    + 'fit_func err:- ' + fit_func_err + '\n'
+                                    + 'plot_width_rel_target_radius err:- ' + plot_width_rel_target_radius_err + '\n'
+                                    )
     else:
         Output.delete("1.0", "end")
         Output.insert("1.0", "Step 4: Wafer evaluation errors:" + '\n'
@@ -647,6 +667,11 @@ def plot_exposure_profile():
             for foi in features_of_interest:
                 gpf = wfr.features[foi]
                 plotting.plot_exposure_profile(gcf=gpf, path_save=join(wfr.path_results, 'figs'), save_type=save_type)
+            Output.delete("1.0", "end")
+            Output.insert('1.0', 'plot_exposure_profile: ' + '\n'
+                          +"Plot saved" + '\n')
+            tk.messagebox.showinfo("plot_exposure_profile:",
+                                    "Plot saved" + '\n')
         except:
             Output.delete("1.0", "end")
             Output.insert('1.0','features_of_interest error:- '+str(features_of_interest)+ ' is not a aviable feature \n')
@@ -689,32 +714,36 @@ def backout_process_to_achieve_target():
         r_target_err = r_target + ' is not a float'
 
     if wfr!=False:
-        try:
-            wfr.backout_process_to_achieve_target(target_radius=target_radius,
-                                                  target_depth=target_depth_profile,
-                                                  thickness_PR=thickness_PR,
-                                                  thickness_PR_budget=thickness_PR_budget,
-                                                  r_target=r_target,
-                                                  save_fig=True)
-            Output.delete("1.0", "end")
-            Output.insert('1.0', 'backout_process_to_achieve_target completed with:'
-                          + 'thickness_PR : ' + thickness_PR + '\n'
-                          + 'thickness_PR_budget err:- ' + thickness_PR_budget + '\n'
-                          + 'r_target err:- ' + r_target + '\n'
-                          )
-        except:
-            Output.delete("1.0", "end")
-            Output.insert('1.0', 'backout_process_to_achieve_target err:-'
-                          + 'thickness_PR err:- ' + thickness_PR_err + '\n'
-                          + 'thickness_PR_budget err:- ' + thickness_PR_budget_err + '\n'
-                          + 'r_target err:- ' + r_target_err + '\n'
-                          )
-            tk.messagebox.showerror("backout_process_to_achieve_target err:",
-                                    "You scrwed up" + '\n'
-                                    +'thickness_PR err:- ' + thickness_PR_err + '\n'
-                                    + 'thickness_PR_budget err:- ' + thickness_PR_budget_err + '\n'
-                                    + 'r_target err:- ' + r_target_err + '\n'
-                                    )
+        # try:
+        wfr.backout_process_to_achieve_target(target_radius=target_radius,
+                                              target_depth=target_depth_profile,
+                                              thickness_PR=thickness_PR,
+                                              thickness_PR_budget=thickness_PR_budget,
+                                              r_target=r_target,
+                                              save_fig=True)
+        Output.delete("1.0", "end")
+        Output.insert('1.0', 'backout_process_to_achieve_target completed with:'
+                      + 'target_radius : ' + str(target_radius) + '\n'
+                      + 'target_depth_profile : ' + str(target_depth_profile) + '\n'
+                      + 'thickness_PR : ' + str(thickness_PR) + '\n'
+                      + 'thickness_PR_budget err:- ' + str(thickness_PR_budget) + '\n'
+                      + 'r_target err:- ' + str(r_target) + '\n'
+                      )
+        # except:
+        #     Output.delete("1.0", "end")
+        #     Output.insert('1.0', 'backout_process_to_achieve_target err:-'
+        #                   + 'target_radius err:- ' + target_radius_err + '\n'
+        #                   + 'target_depth_profile err:- ' + target_depth_profile_err + '\n'
+        #                   + 'thickness_PR err:- ' + thickness_PR_err + '\n'
+        #                   + 'thickness_PR_budget err:- ' + thickness_PR_budget_err + '\n'
+        #                   + 'r_target err:- ' + r_target_err + '\n'
+        #                   )
+        #     tk.messagebox.showerror("backout_process_to_achieve_target err:",
+        #                             "You scrwed up" + '\n'
+        #                             +'thickness_PR err:- ' + thickness_PR_err + '\n'
+        #                             + 'thickness_PR_budget err:- ' + thickness_PR_budget_err + '\n'
+        #                             + 'r_target err:- ' + r_target_err + '\n'
+        #                             )
     else:
         Output.delete("1.0", "end")
         Output.insert('1.0', 'Estimate photoresist process err:- Step 4 not completed')
@@ -928,8 +957,8 @@ if __name__ == '__main__':
     root.geometry('1600x800')  # set the window size
 
     # define fgures
-    on = tk.PhotoImage(file=path + "/on.png")
-    off = tk.PhotoImage(file=path + "/off.png")
+    on = tk.PhotoImage(file=path + "/software/on.png")
+    off = tk.PhotoImage(file=path + "/software/off.png")
 
     ############  Step 1 initalize procesfloww ##################################
     step1Label = tk.Label(root, text="Step 1: read process flow", font=('Helvetica', title_size))
@@ -1098,7 +1127,9 @@ if __name__ == '__main__':
     root.update()
 
     # Dropdown toogle of the used profilometers
-    options = ['KLATencor-P7', 'Dektak']
+    parameters_path = path + '/software/profilometry_tools.xlsx'
+    profilometry=pd.read_excel(parameters_path)
+    options = profilometry['Profilometry'].dropna().to_list()
     profilo_tool = tk.StringVar()
     profilo_tool.set('KLATencor-P7')
     profilometry_tool_Drop = tk.OptionMenu(root, profilo_tool, *options)
@@ -1401,6 +1432,7 @@ if __name__ == '__main__':
     thickness_PR_Txt.insert('1.0','7.5')
     thickness_PR_budget_Txt.insert('1.0','1.5')
     r_target_Txt.insert('1.0','20')
+    root.update()
     #Step 3 initalisations
     # # Read processflow buton lauches the functionio.read_processflow
     # readProces = tk.Button(root, text="Read process flow", font=('calbiri', 11), command=lambda: read_processFlow())
