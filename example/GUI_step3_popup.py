@@ -9,11 +9,18 @@ class wafer_init:
         self.measurement_methods=new_measurement_methods
         self.measurement_methods_err=new_measurement_methods_err
 
+
+parameters=[]
+save_OnOff = False
 def slect_profilometry(profilometry_tool,wafer_step3,letter_size,title_size):
+    global parameters
     profilo_window = tk.Toplevel()
     profilo_window.title('Select specifications of '+ profilometry_tool)
     profilo_window.config(background='light green')
     profilo_window.geometry('900x250')  # set the window size
+    path = str(Path.cwd())
+    on = tk.PhotoImage(file=path + "/software/on.png")
+    off = tk.PhotoImage(file=path + "/software/off.png")
 
     step1Label = tk.Label(profilo_window, text="Specify parameters of "+profilometry_tool, font=('Helvetica', title_size))
     step1Label.place(x=10, y=10)
@@ -160,7 +167,7 @@ def slect_profilometry(profilometry_tool,wafer_step3,letter_size,title_size):
     profilo_window.update()
 
     ##### initial profilometry tool file load #####
-    path = str(Path.cwd())
+
     parameters_path = path + '/software/profilometry_tools.xlsx'
     try:
         parameters = pd.read_excel(parameters_path)  ## seheet_name='Measurement_methods' net tim
@@ -197,8 +204,23 @@ def slect_profilometry(profilometry_tool,wafer_step3,letter_size,title_size):
     except:
         tk.messagebox.showwarning("showwarning", "profilometry_tools.xlsx is wrong load manually")
 
+    save_OnOff = False
+    def savefunc_OnOff():  # is only true or false
+        global save_OnOff
+        if save_OnOff == False:
+            save_OnOff_Button.config(image=on)
+            save_OnOff = True
+        else:
+            save_OnOff_Button.config(image=off)
+            save_OnOff = False
     def quit():
-        parameters = pd.read_excel(parameters_path)
+        global save_OnOff
+        global parameters
+        keep = parameters['Profilometry'].dropna().to_list()
+        for i in ['Profilometry', 'data_etch_monitor', 'data_optical', 'data_misc']:
+            keep.append(i)
+        parameters = parameters[keep]
+
         ### getting the data and convert intot the talbe that we want to have
         filetype_read = filetype_read_Txt.get("1.0",'end-1c')
         parameters._set_value(0,profilometry_tool,filetype_read)
@@ -272,23 +294,23 @@ def slect_profilometry(profilometry_tool,wafer_step3,letter_size,title_size):
                                'Optical': data_optical,
                                'Misc': data_misc,
                                }
-        parameters.to_excel(parameters_path)
         measurement_methods_err = {'x_units_read_err': x_units_read_err, 'y_units_read_err': y_units_read_err,
                                    'x_units_write_err': x_units_write_err, 'y_units_write_err': y_units_write_err}
         wafer_step3.update_meas_metods(new_measurement_methods=measurement_methods,new_measurement_methods_err=measurement_methods_err)
+        if save_OnOff==True:
+            parameters.to_excel(parameters_path)
         profilo_window.destroy()
 
-    # Lads the parameter from excel sheet
-    load_parameters_Button = tk.Button(profilo_window, text="Load .xlsx or .csv", font=('Helvetica', 8),
-                                       command=lambda: load_parameters())
-    load_parameters_Button.place(x=10, y=headr_misc_Label.winfo_y() + headr_misc_Label.winfo_height() + 5)
-    profilo_window.update()
-    load_parameters_Text = tk.Text(profilo_window, width=10,height=1, font=("Helvetica", letter_size))
-    load_parameters_Text.place(x=5+load_parameters_Button.winfo_x()+load_parameters_Button.winfo_width(),
-                               y=headr_misc_Label.winfo_y() + headr_misc_Label.winfo_height() + 5)
-    profilo_window.update()
     # Sets the tiped in parameters and kills the popup window
     kill = tk.Button(profilo_window, text="Set measurements methods", font=('Helvetica', 8), command=lambda: quit())
-    kill.place(x=10+load_parameters_Text.winfo_x()+load_parameters_Text.winfo_width(), y=headr_misc_Label.winfo_y() + headr_misc_Label.winfo_height() + 5)
-
+    kill.place(x=10, y=headr_misc_Label.winfo_y() + headr_misc_Label.winfo_height() + 5)
+    profilo_window.update()
+    # Save on off buttom
+    save_OnOff_Label = tk.Label(profilo_window, text="Save on/off", font=('Helvetica', letter_size))
+    save_OnOff_Label.place(x=kill.winfo_x()+kill.winfo_width()+5, y=kill.winfo_y())
+    profilo_window.update()
+    save_OnOff_Button = tk.Button(profilo_window, image=off, font=("Helvetica", letter_size),
+                                        command=lambda: savefunc_OnOff())
+    save_OnOff_Button.place(x=save_OnOff_Label.winfo_x() + save_OnOff_Label.winfo_width() + 5,
+                                  y=save_OnOff_Label.winfo_y())
     profilo_window.update()
