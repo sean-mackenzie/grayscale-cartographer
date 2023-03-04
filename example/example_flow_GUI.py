@@ -278,6 +278,8 @@ def init_featuresDesigns():
         except:
             designs_err = 'There is a problem with either the: design_lbls, target_lbls, design_locs, design_ids'
         try:
+            Output.delete("1.0", "end")
+            Output.insert("1.0", 'Step 2 Features:')
             features = initialize_design_features(designs,
                                                   design_spacing,
                                                   dose_lbls,
@@ -300,13 +302,18 @@ def init_featuresDesigns():
                           + 'Focus labels: ' + focus_lbls_Txt.get('1.0', 'end-1c') + '\n'
                           + 'Fem_dxdy is: '+fem_dxdy_Txt.get('1.0', 'end-1c')+'\n'
                           )
-            plot1.clear()
-            plot1.grid()
-            canvas.draw()
-            root.update()  #
+            root.update()
+            fig1 = plt.figure()
+            plt.title('Features in mm')
+            plt.legend('', frameon=False)
+            wafer_plot = cicleXY([0, 0], 50.8 * 1000)
+            plt.plot(wafer_plot.xcir, wafer_plot.ycir, 'b')
+            plt.grid()
             for i in design_locs:
                 Features = cicleXY(i,target_radius)
-                plotFeatures(Features.xcir,Features.ycir)
+                plt.plot(Features.xcir,Features.ycir, 'r')
+            creat_figure_on_gui(fig1)
+
         except:
             features = False
             Output.delete("1.0", "end")
@@ -345,6 +352,18 @@ def init_featuresDesigns():
                                 + "Do step 1 first" + '\n\n'
                                 )
 
+# need to pass a figure in this function and she appears on the gui attention figure size must be 3.5,3.5
+tb=None
+def creat_figure_on_gui(fig):
+    # #The figure on the user interface window#
+    fig.set_size_inches(3.5,3.5)
+    canvas = FigureCanvasTkAgg(fig, master=root)
+    canvas.get_tk_widget().place(x=step2Label.winfo_x(),
+                                     y=downsample_Txt.winfo_y() + downsample_Txt.winfo_height() + 5)
+    canvas.draw()
+    root.update()
+    # toolbar = NavigationToolbar2Tk(canvas, root)
+    # toolbar.update()
 
 class cicleXY:
     def __init__(self, center, radius):
@@ -354,15 +373,7 @@ class cicleXY:
         self.ycir = [(self.radius * np.sin(x)+self.center[1])/1000 for x in np.linspace(0, 2 * np.pi, 500)]
 
 
-def plotFeatures(x,y):
-    plot1.legend('',frameon=False)
-    plot1.plot(x, y, 'r')
-    wafer_plot=cicleXY([0,0],50.8*1000)
-    # plot1.set_title('Serial Data')
-    plot1.plot(wafer_plot.xcir, wafer_plot.ycir,'b')
-    plot1.grid()
-    canvas.draw()
-    root.update()
+
 """
 3. Initialize the 'Wafer'
 
@@ -397,6 +408,8 @@ def init_Wafer():
     if features!=False:
         if measurement_methods!=False:
             try:
+                Output.delete("1.0", "end")
+                Output.insert("1.0", 'Step 3: Wafer initalization')
                 # 5. the 'wafer' structures all of this data as a historical record of 'cause' and 'effect'
                 wfr = GraycartWafer(wid=wid,
                                     path=base_path,
@@ -590,6 +603,8 @@ def eval_process():
 
     if wfr!=False:
         try:
+            Output.delete("1.0", "end")
+            Output.insert("1.0", 'Step 4: Wafer initalization')
             wfr.evaluate_process_profilometry(plot_fits=save_profilometry_processing_figures,
                                               perform_rolling_on=perform_rolling_on,
                                               evaluate_signal_processing=evaluate_signal_processing,
@@ -664,6 +679,8 @@ def plot_exposure_profile():
     features_of_interest=features_of_interest.replace(' ', '').split(',')
     if wfr!=False:
         try:
+            Output.delete("1.0", "end")
+            Output.insert('1.0', 'plot_exposure_profile:')
             for foi in features_of_interest:
                 gpf = wfr.features[foi]
                 plotting.plot_exposure_profile(gcf=gpf, path_save=join(wfr.path_results, 'figs'), save_type=save_type)
@@ -714,36 +731,40 @@ def backout_process_to_achieve_target():
         r_target_err = r_target + ' is not a float'
 
     if wfr!=False:
-        # try:
-        wfr.backout_process_to_achieve_target(target_radius=target_radius,
-                                              target_depth=target_depth_profile,
-                                              thickness_PR=thickness_PR,
-                                              thickness_PR_budget=thickness_PR_budget,
-                                              r_target=r_target,
-                                              save_fig=True)
-        Output.delete("1.0", "end")
-        Output.insert('1.0', 'backout_process_to_achieve_target completed with:'
-                      + 'target_radius : ' + str(target_radius) + '\n'
-                      + 'target_depth_profile : ' + str(target_depth_profile) + '\n'
-                      + 'thickness_PR : ' + str(thickness_PR) + '\n'
-                      + 'thickness_PR_budget err:- ' + str(thickness_PR_budget) + '\n'
-                      + 'r_target err:- ' + str(r_target) + '\n'
-                      )
-        # except:
-        #     Output.delete("1.0", "end")
-        #     Output.insert('1.0', 'backout_process_to_achieve_target err:-'
-        #                   + 'target_radius err:- ' + target_radius_err + '\n'
-        #                   + 'target_depth_profile err:- ' + target_depth_profile_err + '\n'
-        #                   + 'thickness_PR err:- ' + thickness_PR_err + '\n'
-        #                   + 'thickness_PR_budget err:- ' + thickness_PR_budget_err + '\n'
-        #                   + 'r_target err:- ' + r_target_err + '\n'
-        #                   )
-        #     tk.messagebox.showerror("backout_process_to_achieve_target err:",
-        #                             "You scrwed up" + '\n'
-        #                             +'thickness_PR err:- ' + thickness_PR_err + '\n'
-        #                             + 'thickness_PR_budget err:- ' + thickness_PR_budget_err + '\n'
-        #                             + 'r_target err:- ' + r_target_err + '\n'
-        #                             )
+        try:
+            Output.delete("1.0", "end")
+            Output.insert('1.0', 'backout_process_to_achieve_target completed with:')
+            wfr.backout_process_to_achieve_target(target_radius=target_radius,
+                                                  target_depth=target_depth_profile,
+                                                  thickness_PR=thickness_PR,
+                                                  thickness_PR_budget=thickness_PR_budget,
+                                                  r_target=r_target,
+                                                  save_fig=True)
+            Output.delete("1.0", "end")
+            Output.insert('1.0', 'backout_process_to_achieve_target completed with:'
+                          + 'target_radius : ' + str(target_radius) + '\n'
+                          + 'target_depth_profile : ' + str(target_depth_profile) + '\n'
+                          + 'thickness_PR : ' + str(thickness_PR) + '\n'
+                          + 'thickness_PR_budget err:- ' + str(thickness_PR_budget) + '\n'
+                          + 'r_target err:- ' + str(r_target) + '\n'
+                          )
+            tk.messagebox.showinfo("backout_process_to_achieve_target:",
+                                   "Plot saved" + '\n')
+        except:
+            Output.delete("1.0", "end")
+            Output.insert('1.0', 'backout_process_to_achieve_target err:-'
+                          + 'target_radius err:- ' + target_radius_err + '\n'
+                          + 'target_depth_profile err:- ' + target_depth_profile_err + '\n'
+                          + 'thickness_PR err:- ' + thickness_PR_err + '\n'
+                          + 'thickness_PR_budget err:- ' + thickness_PR_budget_err + '\n'
+                          + 'r_target err:- ' + r_target_err + '\n'
+                          )
+            tk.messagebox.showerror("backout_process_to_achieve_target err:",
+                                    "You scrwed up" + '\n'
+                                    +'thickness_PR err:- ' + thickness_PR_err + '\n'
+                                    + 'thickness_PR_budget err:- ' + thickness_PR_budget_err + '\n'
+                                    + 'r_target err:- ' + r_target_err + '\n'
+                                    )
     else:
         Output.delete("1.0", "end")
         Output.insert('1.0', 'Estimate photoresist process err:- Step 4 not completed')
@@ -763,6 +784,10 @@ def compare_target_to_feature_evolution():
         Output.delete("1.0", "end")
         Output.insert('1.0', 'compare_target_to_feature_evolution')
         wfr.compare_target_to_feature_evolution(px='r', py='z', save_fig=True)
+        Output.delete("1.0", "end")
+        Output.insert('1.0', 'compare_target_to_feature_evolution finished')
+        tk.messagebox.showinfo("compare_target_to_feature_evolution:",
+                               "Plot saved" + '\n')
     else:
         Output.delete("1.0", "end")
         Output.insert('1.0', 'compare_target_to_feature_evolution err:- Step 4 not completed')
@@ -784,11 +809,15 @@ def characterize_exposure_dose_depth_relationship():
                                                           save_type=save_type,
                                                           )
         wfr.merge_exposure_doses_to_process_depths(export=True)
+        Output.delete("1.0", "end")
+        Output.insert('1.0', 'characterize_exposure_dose_depth_relationship finished')
+        tk.messagebox.showinfo("characterize_exposure_dose_depth_relationship:",
+                               "Plot saved" + '\n')
     else:
         Output.delete("1.0", "end")
         Output.insert('1.0', 'characterize_exposure_dose_depth_relationship err:- Step 4 not completed')
         tk.messagebox.showerror("characterize_exposure_dose_depth_relationship err:",
-                                "You scrwed up" + '\n'
+                                "You screwed up" + '\n'
                                 + 'Step 4 not completed'
                                 )
 
@@ -810,6 +839,10 @@ def correct_grayscale_design_profile():
                                                  plot_figs=True,
                                                  save_type=save_type,
                                                  )
+            Output.delete("1.0", "end")
+            Output.insert('1.0', 'correct_grayscale_design_profile finished')
+            tk.messagebox.showinfo("correct_grayscale_design_profile:",
+                                   "Plot saved" + '\n')
         except:
             Output.delete("1.0", "end")
             Output.insert('1.0', 'correct_grayscale_design_profile err:- Run first: characterize_exposure_dose_depth_relationship')
@@ -836,6 +869,10 @@ def plot_all_exposure_dose_to_depth():
         Output.insert('1.0', 'plot_all_exposure_dose_to_depth')
         step_develop = 3
         wfr.plot_all_exposure_dose_to_depth(step=step_develop)
+        Output.delete("1.0", "end")
+        Output.insert('1.0', 'plot_all_exposure_dose_to_depth finished')
+        tk.messagebox.showinfo("plot_all_exposure_dose_to_depth:",
+                               "Plot saved" + '\n')
     else:
         Output.delete("1.0", "end")
         Output.insert('1.0', 'plot_all_exposure_dose_to_depth err:- Step 4 not completed')
@@ -854,6 +891,10 @@ def compare_exposure_functions():
         Output.delete("1.0", "end")
         Output.insert('1.0', 'compare_exposure_functions')
         wfr.compare_exposure_functions()
+        Output.delete("1.0", "end")
+        Output.insert('1.0', 'compare_exposure_functions finished')
+        tk.messagebox.showinfo("compare_exposure_functions:",
+                               "Plot saved" + '\n')
     else:
         Output.delete("1.0", "end")
         Output.insert('1.0', 'compare_exposure_functions err:- Step 4 not completed')
@@ -871,6 +912,10 @@ def plot_feature_evolution():
         Output.delete("1.0", "end")
         Output.insert('1.0', 'plot_feature_evolution')
         wfr.plot_feature_evolution(px='r', py='z', save_fig=True)
+        Output.delete("1.0", "end")
+        Output.insert('1.0', 'plot_feature_evolution finished')
+        tk.messagebox.showinfo("plot_feature_evolution:",
+                               "Plot saved" + '\n')
     else:
         Output.delete("1.0", "end")
         Output.insert('1.0', 'plot_feature_evolution err:- Step 4 not completed')
@@ -888,6 +933,10 @@ def compare_target_to_feature_evolution():
         Output.delete("1.0", "end")
         Output.insert('1.0', 'compare_target_to_feature_evolution')
         wfr.compare_target_to_feature_evolution(px='r', py='z', save_fig=True)
+        Output.delete("1.0", "end")
+        Output.insert('1.0', 'compare_target_to_feature_evolution finished')
+        tk.messagebox.showinfo("compare_target_to_feature_evolution:",
+                               "Plot saved" + '\n')
     else:
         Output.delete("1.0", "end")
         Output.insert('1.0', 'compare_target_to_feature_evolution err:- Step 4 not completed')
@@ -905,14 +954,18 @@ specified step. Here, I define 'step' to be the last step in the process flow, a
 """
 def plot_overlay_feature_and_exposure_profiles():
     if wfr != False:
-        Output.delete("1.0", "end")
-        step = max(wfr.list_steps)
-        Output.insert('1.0', 'plot_overlay_feature_and_exposure_profiles: '+str(step))
         for did in wfr.dids:
+            Output.delete("1.0", "end")
+            Output.insert('1.0', 'plot_overlay_feature_and_exposure_profiles:')
             plotting.plot_overlay_feature_and_exposure_profiles(gcw=wfr, step=step, did=did,
                                                                 path_save=join(wfr.path_results, 'figs'),
                                                                 save_type=save_type,
                                                                 )
+            Output.delete("1.0", "end")
+            step = max(wfr.list_steps)
+            Output.insert('1.0', 'plot_overlay_feature_and_exposure_profiles: ' + str(step))
+            tk.messagebox.showinfo("plot_overlay_feature_and_exposure_profiles:",
+                                   "Plot saved" + '\n')
     else:
         Output.delete("1.0", "end")
         Output.insert('1.0', 'plot_overlay_feature_and_exposure_profiles err:- Step 4 not completed')
@@ -929,8 +982,12 @@ doesn't really give any meaningful information right now. It needs to be upgrade
 def grade_profile_accuracy():
     if wfr != False:
         Output.delete("1.0", "end")
-        Output.insert('1.0', 'grade_profile_accuracy')
+        Output.insert('1.0', 'grade_profile_accuracy finished')
         wfr.grade_profile_accuracy(step=max(wfr.list_steps), target_radius=target_radius, target_depth=target_depth_profile)
+        Output.delete("1.0", "end")
+        Output.insert('1.0', 'grade_profile_accuracy finished')
+        tk.messagebox.showinfo("grade_profile_accuracy:",
+                               "Plot saved" + '\n')
     else:
         Output.delete("1.0", "end")
         Output.insert('1.0', 'grade_profile_accuracy err:- Step 4 not completed')
@@ -946,6 +1003,8 @@ def grade_profile_accuracy():
 # ----------------------------------------------------------------------------------------------------------------------
 
 print("example_flow.py completed without errors.")
+
+
 title_size = 10
 letter_size = 8
 if __name__ == '__main__':
@@ -1452,25 +1511,5 @@ if __name__ == '__main__':
     # puttig the text/error log field
     Output = tk.Text(root, height=20,width=40,bg="light cyan",font=("Helvetica", letter_size))
     Output.place(x=10, y=readProces_Button.winfo_y() + readProces_Button.winfo_height() + 10)
-    root.update()
-
-    # #The figure on the user interface window#
-    fig1 = plt.figure(figsize=(3.5,3.5))
-    plot1 = fig1.add_subplot(111)
-    xCirc = [50.8*np.cos(x) for x in np.linspace(0, 2*np.pi, 500)]
-    yCirc = [50.8*np.sin(x) for x in np.linspace(0, 2*np.pi, 500)]
-    # plot1.set_title('Serial Data')
-    plot1.plot(xCirc,yCirc)
-    # plot1.set_xlabel('$mm$')
-    # plot1.set_ylabel('$mm$')
-    plot1.set_title('Features in mm')
-    plot1.grid()
-    # creating the Tkinter canvas
-    # containing the Matplotlib figure
-    canvas = FigureCanvasTkAgg(fig1,master=root)
-    canvas.get_tk_widget().place(x=step2Label.winfo_x(), y=downsample_Txt.winfo_y() + downsample_Txt.winfo_height() +5)
-    canvas.draw()
-    toolbar = NavigationToolbar2Tk(canvas,root)
-    toolbar.update()
     root.update()
     root.mainloop()
